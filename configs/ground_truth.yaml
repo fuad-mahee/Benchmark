@@ -1,0 +1,6 @@
+# RQ1: full-vocabulary glitch census (repetition-task definition, both papers).
+seed: 0
+max_new_tokens: 24        # papers report ~20 generated tokens per probe
+prompt_style: raw         # raw = GlitchCleaner's exact template string; chat = tokenizer chat template
+# The token under test is spliced in as its raw vocabulary id between pre-tokenized template
+# halves -> constant-length prompts, exact-id guarantee (see README method notes).

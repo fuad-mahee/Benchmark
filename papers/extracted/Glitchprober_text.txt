@@ -1,0 +1,1055 @@
+
+===== PAGE 1 =====
+GlitchProber: Advancing Effective Detection and Mitigation of
+Glitch Tokens in Large Language Models
+ZhiboZhang∗ WuxiaBai∗ YuxiLi∗
+HuazhongUniversityofScienceand HuazhongUniversityofScienceand HuazhongUniversityofScienceand
+Technology Technology Technology
+Wuhan,China Wuhan,China Wuhan,China
+zhangzhibo@hust.edu.cn wuxiabai@hust.edu.cn yuxili@hust.edu.cn
+MarkHuasongMeng KailongWang† LingShi
+NationalUniversityofSingapore HuazhongUniversityofScienceand NanyangTechnologicalUniversity
+Singapore,Singapore Technology Singapore,Singapore
+huasong.meng@u.nus.edu Wuhan,China ling.shi@ntu.edu.sg
+wangkl@hust.edu.cn
+LiLi JunWang HaoyuWang
+BeihangUniversity BeihangUniversity HuazhongUniversityofScienceand
+Beijing,China Beijing,China Technology
+lilicoding@ieee.org junwang.lu@gmail.com Wuhan,China
+haoyuwang@hust.edu.cn
+ABSTRACT 1 INTRODUCTION
+Largelanguagemodels(LLMs)haveachievedunprecedentedsuc- InthefieldofNaturalLanguageProcessing(NLP),largelanguage
+cessinthefieldofnaturallanguageprocessing.However,theblack- models(LLMs)likeGPT-4[2],Gemini[30,33],andClaude3[4]have
+boxnatureoftheirinternalmechanismshasbroughtmanyconcerns demonstratednear-human-leveltextgenerationcapabilities.Their
+abouttheirtrustworthinessandinterpretability.Recentresearch exceptionalperformancehasledtowidespreadadoption[34,40].
+hasdiscoveredaclassofabnormaltokensinthemodel’svocabulary When using these models, users provide a prompt, which the
+spaceandnamedthem“glitchtokens”.Thosetokens,onceincluded model’s tokenizer breaks down into a series of discrete tokens.
+intheinput,mayinducethemodeltoproduceincorrect,irrelevant, Thesetokensarethefundamentalunitsofinformationprocessing
+orevenharmfulresults,drasticallyunderminingthereliabilityand forthemodel,playingacrucialroleintheusageofLLMs.Recentre-
+practicalityofLLMs. search[12,13,25,27,28,31],however,hasshownthatsome“glitch
+Inthiswork,weaimtoenhancetheunderstandingofglitchto- tokens”existinthevocabularyofLLMs.Onceincludedinaprompt,
+kensandproposetechniquesfortheirdetectionandmitigation.We thesespecialtokenscanpotentiallyleadtomodelerrors,suchas
+firstrevealthecharacteristicfeaturesinducedbyglitchtokenson misunderstandinguserintent,refusingtoanswer,orgenerating
+LLMs,whichareevidencedbysignificantdeviationsinthedistribu- irrelevantorharmfultext.Therefore,thoroughanalysisanddetec-
+tionsofattentionpatternsanddynamicinformationfromintermedi- tionoftheseglitchtokensarecrucialtoensurethereliabilityand
+atemodellayers.Basedontheinsights,wedevelopGlitchProber, safetyofLLMs.
+atoolforefficientglitchtokendetectionandmitigation.Glitch- Totackletheglitchtokensissue,onenotablemethodrecently
+Proberutilizessmall-scalesampling,principalcomponentanalysis ispresentedbyLietal.[20].Thistypicalandintuitivesolution
+foracceleratedfeatureextraction,andasimpleclassifierforeffi- involvesstudyingthecharacteristicsofglitchtokensintheword
+cientvocabularyscreening.Takingonestepfurther,GlitchProber embeddingspaceofLLMsandaccordinglydevelopingdetection
+rectifiesabnormalmodelintermediatelayervaluestomitigatethe techniques.Theydiscoveredthatglitchtokenstendtoclusterin
+destructiveeffectsofglitchtokens.Evaluatedonfivemainstream theembeddingspaceandproposedaniterativeclustering-based
+open-sourceLLMs,GlitchProberdemonstrateshigherefficiency, techniquecalledGlitchHunterforefficientglitchtokendetection.
+precision,andrecallcomparedtoexistingapproaches,withanav- Although there has been progress in detecting glitch tokens,
+erageF1scoreof0.86andanaveragerepairrateof50.06%.Glitch- therestilllacksanefficientandprecisedetectionofglitchtokens
+Proberunveilsanovelpathtoaddressthechallengesposedby universallyapplicableindifferentLLMs.Furthermore,existingap-
+glitchtokensandinspiresfutureresearchtowardmorerobustand proachesprimarilyfocusondetection,however,howtofixthe
+interpretableLLMs. issuescausedbyglitchtokensintheusageofLLMsremainsan
+openquestion.Severallimitationscontributetotheaforementioned
+challenges:
+(1) Theexhaustivesearchmethodofcheckingvocabularyissimple
+∗Co-firstauthorwithequalcontribution. andintuitivebutincurssignificanttimecostswithlargetoken
+†CorrespondingAuthor. sets,makingitinefficientforpracticaluse.
+4202
+guA
+9
+]LC.sc[
+1v50940.8042:viXra
+===== PAGE 2 =====
+Conferenceacronym’XX,June03–05,2018,Woodstock,NY ZhiboZhang,WuxiaBai,YuxiLi,MarkHuasongMeng,KailongWang,LingShi,LiLi,JunWang,andHaoyuWang
+(2) Existing detection methods primarily identify glitch tokens • EffectiveGlitchTokenFixing.Intermsoffix,GlitchProber
+basedonfeatureslikewordfrequencyandwordvectors.How- successfullyrepairsanaverageof7,758tokensacrossthefive
+ever,thesefeaturesdonotdeeplyexplorethemechanismsby LLMs.Itachievesanaveragerepairrateof50.06%,significantly
+whichglitchtokensimpactmodelbehaviors,resultinginpoor outperformingthebaselineapproach.Ourresultsdemonstrate
+detectionaccuracyandgeneralizationperformance. theeffectivenessoftheproposedfixstrategybyadjustingthe
+(3) Currentresearchprimarilyfocusesondetectingglitchtokens intermediatevaluesofglitchtokensintheintermediatelayers.
+ratherthanhowtofixthem.Whiledetectioncanidentifyissues, EthicalConsideration. Inthiswork,werecognizethatglitch
+itdoesnoteliminatethenegativeimpactofglitchtokenson
+tokenscancauseabnormalresponsesfromLLMs,potentiallyaffect-
+modelperformance,limitingitspracticalvalue.
+ingtheirusage.However,westrictlyadheretoethicalprinciples
+anddonotcondoneanyabuseorexploitationofthesefindings.Our
+Ourwork.Toaddresstheseexistingchallengesandbridgethe
+researchaimstoraiseawarenessoftheserisksandcontributetoa
+gap,inthiswork,weinvestigatetheinternalstructureofLLMs
+moresecureLLMcommunity.Wehavereportedourfindingstothe
+toexplorethedifferencesbetweenglitchtokensandnormalto-
+respectiveLLMdevelopersandarecommittedtocollaboratingwith
+kens.Specifically,throughempiricalstudy,wediscoveredsignifi-
+themtodevelopeffectivedefensesandmitigationstrategies.By
+cantdifferencesbetweenglitchtokensandnormaltokensinterms
+workingcooperatively,wepromoteresponsibleresearchpractices
+oftheattentionpatternsanddynamicinformationofmulti-layer
+andensurethesafeandbeneficialuseofLLMs.
+perceptron(MLP)moduleswithintransformer-basedLLMs.This
+discoveryrevealstheadversarialimpactofglitchtokensonthe 2 BACKGROUNDANDRELATEDWORK
+internalmechanismsofthemodel,indicatingthatglitchtokens
+2.1 Transformer-basedLLMs
+introduceabnormalinterferenceandnoisetoneuralnetworks.This
+hindersthemodelfromcorrectlyunderstandingandprocessingthe Self-attention[7,24]isacorecomponentofTransformer-based
+semanticinformationcarriedbythesetokens,ultimatelyleading models,demonstratingstrongmodelingcapabilitiesacrossvarious
+toerroneousoutputs. tasks.Givenaninput𝑋 ∈ R𝑛×𝑑 ,where𝑛 denotesthesequence
+Fromthesefindings,wegainaninsightthattheglitchtokens lengthand𝑑denotesthedimension,self-attentionlinearlyprojects
+canbeefficientlydetectedduetothedeviateddistributionsofin- 𝑋 intoquery,key,andvaluerepresentations,i.e.,𝑄,𝐾,and𝑉.The
+termediatelayers’outputscausedbythem,andaccordinglytheir attentionscoresmatrix𝐴isthencomputedbytakingthedotprod-
+impactcanbeeffectivelymitigatedbyproactivelyrectifyingthose uctbetweenthequeryandkeymatrices,followedbyasoftmax
+abnormaloutputs.Basedonthisinsight,weproposeanewmethod normalization.Theattentionoutputisobtainedbymultiplyingthe
+forglitchtokendetectionandfixcalledGlitchProber.Forglitch attentionscoreswiththevaluematrix.
+token detection, GlitchProber first samples a small subset of 𝑄𝐾𝑇
+manuallylabeledglitchtokensasthesampleset,andextractsthe 𝐴=softmax( √ ) (1)
+𝑑
+outputsofthesetokensfromtheintermediatelayers,specifically,
+theattentionscoresoftheattentionpatternsandMLPstatus.Itthen Attention(𝑄,𝐾,𝑉)=𝐴·𝑉 (2)
+appliesPrincipalComponentAnalysis(PCA)[1]dimensionality
+reductiontotheintermediatelayers’outputsandobtainsafeature ToanalyzethebehaviorofTransformer-basedmodelsduringse-
+representationmatrixforthesampleset.Thismatrix,alongwith quenceprocessing,weintroducetheconceptofattentionpatterns,
+thecorrespondingclasslabels,isusedtotrainaSupportVector whichcanbeextractedfromthecorrespondingrow𝐴[𝑛] ofthe
+Machine(SVM)[9]classifier,whichcansubsequentlybeemployed
+attentionscoresmatrix𝐴.Inautoregressivegenerationtasks,the
+forglitchtokendetection.Tofixtheglitchtokens,GlitchProber attentionpatternsonlycontaintheattentionweightsbetweenthe
+analyzestheactivationvaluerangeofnormaltokensintheinterme- currenttokenandpreviouslygeneratedtokens.
+diateMLPstatusandrectifiestheactivationstatesofglitchtokens. TheMLPmoduleinTransformer-basedmodelsemploysagat-
+Specifically,itaimstoadjusttheactivationpatternsofglitchtokens ingmechanismsimilartothatofGatedMulti-LayerPerceptrons
+tobeclosertothoseofnormaltokens,andtherebyminimizetheir (gMLPs)[22].Givenaninput𝑌 ∈ R𝑛×𝑑 ,where𝑛denotesthese-
+impactonthemodel’soutput.
+quencelengthand𝑑denotesthedimension,theMLPfirstprojects
+Contributions.Wesummarizeourkeycontributionsasfollows: 𝑌 toahigher-dimensionalspaceusingalineartransformation:
+𝑍 =𝑌𝑈 (3)
+• EmpiricalStudyExploringtheInternalImpactofGlitch
+TokensonLLMs.Weconductacomprehensiveandsystematic where𝑈 ∈R𝑑×𝑑𝑚 isalearnableweightmatrix.Thetransformed
+empiricalstudyonhowglitchtokensandnormaltokensmanifest representation𝑍 isthensplitalongthefeaturedimensionintotwo
+at the structural level across different LLMs. One of our key matrices,𝑍
+1
+,𝑍
+2
+∈R𝑛×𝑑𝑚/2:
+findingsisthatglitchtokenscantriggerabnormalvaluesina
+model’sattentionpatternsandMLPstatus. 𝑍 1 ,𝑍 2 =split(𝑍) (4)
+• EffectiveGlitchTokenDetection.Ourevaluationonfiverep- Anactivationfunction𝜎 isappliedelement-wiseto𝑍 1toobtain
+resentativeopensourceLLMsdemonstratesthatGlitchProber theMLPgate𝜎(𝑍
+1
+).TheMLPgateisthenmultipliedelement-wise
+cansaveapproximately40%oftimeinglitchtokendetectioncom- withtheMLPdata𝑍 2toproducethegatedoutput𝑍˜:
+paredtothestate-of-the-artapproaches.Additionally,Glitch-
+Proberexhibitsasignificantimprovementindetectionaccuracy. 𝑍˜ =𝜎(𝑍 1 )⊙𝑍 2 (5)
+===== PAGE 3 =====
+GlitchProber:AdvancingEffectiveDetectionandMitigationofGlitchTokensinLargeLanguageModels Conferenceacronym’XX,June03–05,2018,Woodstock,NY
+Finally,anotherlineartransformationisappliedtomap𝑍˜ backto • RQ1(Characteristics):Whatdifferencesareexhibitedbe-
+theoriginaldimension. tweenglitchtokensandnormaltokensatthestructural
+levelofanLLM?
+Output=𝑍˜𝑊 (6) • RQ2 (Ubiquity): Are the differences discovered in RQ1
+where𝑊 ∈R𝑑𝑚/2×𝑑 isanotherlearnableweightmatrix. prevalentinmostLLMs?
+TheMLPgate𝜎(𝑍 1 )andMLPdata𝑍 2intheMLPcanbeseen ToaddressthetwoRQs,weinvestigatetheinternalmechanisms
+asaspecialvariantofthespatialgatingunitinTransformer-based ofLLMsbyanalyzingthestatusofeachlayerinthetransformer
+models.Thesetwocomponentsworktogethertocontrolthein- forwardprocessofprediction.Thisinvolvesexaminingthedata
+formationflowandcapturedependenciesbetweentokens.Byex- flowoftheintermediatelayersasthemodelprocessesinputs.
+tractingandanalyzingtheMLPgateandMLPdata,wecangain
+3.1 ExperimentSetup
+insightsintohowthemodelprocessesandrespondstodifferent
+typesofinputwithinthemodule.
+Tobetterunderstandtheimpactofglitchtokensonthemodel’s
+internaloutputgenerationprocess,weconductaseriesofexperi-
+2.2 GlitchTokenPhenomenon
+mentsontheLlama-2-7b-chatmodel[35],shortlywrittenasLlama2.
+TokenizerplaysakeyroleinanLLMasittransformsacontinuous Llama2isalanguagemodelbasedontheLlamaarchitecture.In
+textsequenceintoalistofdiscretevaluescalledtokens[38].The ourexperiments,wesetthetemperatureto0toeliminaterandom-
+tokenstransformedfromthetrainingcorpusformthevocabulary nessandensureconsistencyinthemodel’sresponses.Allother
+dictionaryofLLMs,andthevocabularydictionaryinturndeter- configurationsaredefault.
+minesthecapacityofLLMstoproducediverseandcomprehensive Weemployaunifiedapproachtodeterminewhethereachtoken
+output.TherapidadvancementofLLMshasbroughtattentionto isglitchyornormalinthisstudy.Whilethesymptomsofglitch
+variousanomalousphenomena[10,11,18,19,21,23,39],oneof tokensmayvaryacrossdifferenttasks,weconsistentlyutilizea
+whichistheexistenceof“glitchtokens”.Thesetokensexhibitanom- repetitiontasktoconstructinputsequencesforglitchtokenidenti-
+aliesinconstructingtheexpectedsemantics,andaresubsequently fication.Specifically,weformulateapromptforarepetitivetask
+reflectedintheabnormalandunexpecteddecodingintheLLM’s suchas“Canyourepeatthetoken‘{𝑡𝑜𝑘𝑒𝑛}’andreturnitbackto
+output. me?”Thispromptisthenfedintothemodeltoassessitsability
+Theglitchtokenphenomenon,firstexploredontheLesswrong toaccuratelyreproducetheoriginaltoken.Ifthemodelfailsto
+website,referstoanomaloustokenssuchas“SolidGoldMagikarp” correctlyrepeatthetokeninitsoutput,weclassifyitasaglitch
+and“petertodd”thatcauseunexpectedandinaccurateresultsin token.Conversely,ifthemodelsuccessfullyrepeatsthetoken,we
+languagemodelslikeGPT-2andGPT-J[25,27,28,31].Subsequent categorizeitasanormaltoken.Wetraverseallthe32,000tokensof
+researchexaminedthecharacteristicsandinstabilityoftheseto- theLlama2modelandeventuallyidentify6,425glitchtokensfrom
+kens,revealingthatevensubtlechangesinpromptscanleadto theentirevocabulary.
+significantdifferencesandhallucinationsinthegeneratedresults. Topreciselycaptureintermediatelayeroutputswithinthemodel,
+Thediscoveryof“polysemous”tokens,whichproducedifferent weresorttoatransformermechanisticinterpretabilitytoolnamed
+responsestorepeatedrequests,furtherhighlightedtheprevalence Transformer-lens[29].Itshooktechniqueenablesreal-timeaccess
+andvariabilityoftheglitchtokenphenomenoninLLMs[26]. oftheactivationvaluesatalllayersandallowscodeinsertioninto
+Recently,Lietal.[20]systematicallyinvestigatedtheglitchto- specificintermediatelayersofthemodel.Inthisstudy,weinsert
+kenswithaproposedtaxonomycoveringtheirtypesandsymptoms. hooksintoallintermediatelayersduringthefirstforwardofthe
+Theyproposedthreetasks,namelyrepetition,lengthandspelling, testedmodel.Thisapproachischosenbecausethefirstforward
+intheirstudytorecognizeglitchtokens.Theirobservationofthe comprehensivelyreflectsthemodel’sunderstandingoftheinput
+clustering distribution of glitch tokens in the word embedding sequenceandhighlightsthedifferencesbetweennormalandglitch
+spacesoffersanovelperspectiveontheautomaticidentification tokens.
+of glitch tokens, making systematic detection feasible in LLMs Weselecttwokeyfeaturestorepresentthemodel’sinternalout-
+containingbillions,oreventensofbillionsofparameters. put,i.e.,attentionpatternsandMLPstatus.Theattentionpatterns
+Theglitchtokenphenomenonuncoversthelimitationsandin- capturetherelativeimportanceandrelationshipsbetweentokens,
+stabilityofLLMswhenprocessingspecifictokens.Inthiswork, whileMLPstatusiscomposedofMLPgateandMLPdata(Sec-
+weaimtoconductasystematicandin-depthinvestigationofthis tion 2.1), providing insights on how the model synthesizes and
+phenomenontogainadeeperunderstandingoftheinternalmecha- modulatesnewrepresentationswithintheMLPmodule.
+nismsofthesemodels.Thiswillprovidevaluableinsightsthatcan
+3.2 RQ1:GlitchTokenCharacteristics
+contributetoenhancingtherobustnessandreliabilityofLLMsin
+futureapplications.
+WecomparetheextractedintermediateresultsofLlama2model
+whenprocessingpromptscontainingnormaltokensandglitchto-
+3 EMPIRICALSTUDY
+kensandobservesignificantdisparityinattentionpatternsand
+Ourempiricalstudyaimstoexploreanintuitivemethodfordetect- MLPstatus.Thedistributionofattentionpatternsforglitchtokens
+ingglitchtokens.Tothisend,weinvestigatethedifferencesinthe insomeattentionheadsdifferssignificantlyfromthatofnormalto-
+model’sbehaviorswhenprocessingglitchtokensversusnormal kens.Toquantitativelyanalyzethesedifferences,werandomlysam-
+tokens.Tworesearchquestionsareraisedtoguidethestudy: plenormaltokensinsizeofthesamenumberasthepre-identified
+===== PAGE 4 =====
+Conferenceacronym’XX,June03–05,2018,Woodstock,NY ZhiboZhang,WuxiaBai,YuxiLi,MarkHuasongMeng,KailongWang,LingShi,LiLi,JunWang,andHaoyuWang
+MLP Gate MLP Data Finding2
+Glitch Tokens
+Normal Tokens
+Theanomalousintermediateresultscausedbyglitchtokens
+0.16 1m 1m arenotuniformlydistributedacrossalllayersofthemodelbut
+ycneuqerF
+id
+ACP
+id
+ACP areconcentratedandamplifiedinspecifickeylayers.
+3.3 RQ2:Ubiquity
+0.00
+0 0.2 0.4 0.6 0.8 1 PCA dim2 PCA dim2
+(a) Attention Pattern (b) MLP Status In order to verify whether our previous findings exist in other
+Figure 1: The distribution of attention patterns and MLP
+LLMs, two additional LLMs, namely Qwen-7B-Chat model and
+status for glitch tokens (shown in red color) and normal
+Mistral-7B-Instructmodel(shortlyasQwenandMistral),arese-
+tokens(inbluecolor)inLlama2model
+lectedtocomplementourempiricalstudy.AsshowninFigure3,
+theexperimentalresultsonthesetwomodelsaresimilartothose
+ofLlama2.Theattentionpatternsofglitchtokensandnormalto-
+kensexhibitinconsistentdistribution.Forexample,theattention
+glitchtokens.Toanalyzetheattentionpatterns,wecreatetwosets
+patternsofnormaltokensmainlyfallwithintherangeof[0,0.2]
+ofprompts:onecontaining6,425promptswithglitchtokensand
+intheQwenmodel,whiletheattentionpatternsofglitchtokens
+anothercontaining6,425promptswithnormaltokens.Wethen
+showadifferentshapeandconcentratesintherangeof [0.8,1].
+computethefrequencydistributionofattentionpatternsgenerated
+SuchinconsistencycanalsobeobservedintheMistralmodel,evi-
+bytheseprompts,categorizingthemintodifferentvalueranges.
+dencedbytheattentionvaluesofnormaltokensandglitchtokens
+Wevisualizetheresultsusingahistogram,asshowninFigure1(a).
+primarilyapproximatingaround0.5and0.7,respectively.Interms
+Theattentionpatternsofnormaltokens(showninbluecolor)gen-
+ofMLPstatus,theintermediatelayerstendtoproduceoutputsina
+erallyclusteraroundlowerrangesandexhibitarelativelysmooth
+centroid-basedclusterfornormaltokens.However,theMLPstatus
+distribution.Incontrast,theattentionpatternsforglitchtokens(in
+valuesofglitchtokensareoverallchaoticanddisseminated.
+redcolor)displayacomparablydivergentandchaoticdistribution.
+Furthermore,thedistributioncharacteristicsofglitchtokensin
+Finding3
+theMLPstatusshowdeviationscomparedtonormaltokens.Due
+tothehighdimensionofMLPstatusvalues,wecannotvisualize Weidentifysimilardifferencesexhibitedbetweennormaland
+theminthesamemethodusedforattentionpatterns.Instead,we glitchtokensattheintermediatelayersofdifferentLLMs.
+resorttoPCAalgorithmtoconvertthecapturedMLPstatus,i.e.,
+MLPgateandMLPdata,totwodimensionvalues.Wepresentthe ThefindingsofRQ1provideinsightsforthesubsequentdetection
+distributionofMLPgateandMLPdatainscatterplots,asshown andfixofglitchtokens,whilethefindinginRQ2offersfactual
+inFigure1(b).Itcanbeobservedthatbothtworepresentationsof evidenceforthebroadapplicationofourapproachinLLMs.
+MLPstatusfornormaltokenstendtoclustertowardsacentroid,
+formingarelativelydenseandboundeddistribution.Incontrast, 4 METHODOLOGY
+theMLPstatusofglitchtokensarehighlydispersedandscattered.
+Basedonthefindingsfromourempiricalstudy,weproposethe
+GlitchProberalgorithm,whichaimstoachieveautomaticdetec-
+Finding1
+tionandfixofglitchtokensbyanalyzingtheinternalactivation
+Llama2showsasignificantdisparityinattentionpatternsand statesofLLMS.Ourapproachconsistsoftwomainideas:
+MLPstatuswhendealingwithglitchtokensandnormaltokens. (1) Leveragingthedifferencesinmodelactivationvalueswhen
+processingglitchtokensandnormaltokenstoachieverapid
+screeningofglitchtokens.Bydesigningananomalydetection
+Toillustratetheanomaliesacrosslayers,weresorttotheWasser-
+algorithm, we can identify and label potential glitch tokens
+steindistance[37]tomeasurethemagnitudeofthedifferencesin
+basedontheiractivationfeaturesextractedfromspecificlayers,
+the intermediate layers outputs produced by normal and glitch
+whichwerefertoaskeylayers(detailedinSection4.3).These
+tokens,andtherebyrevealthedistinctionsinthemodel’sinter-
+keylayerfeaturesarecrucialfordetectingglitchtokens.
+nalmechanismswhenprocessingthesetwogroupsoftokens.In
+(2) Fixingerrorscausedbyglitchtokensbyadjustingthemodel’s
+thisstudy,alargerWassersteindistanceindicatesagreaterdis-
+intermediateresults.Wedesignedaseriesofexperimentswhere
+tributionaldifference.Figure2showstheWassersteindistancein
+we automatically adjusted the output values of the model’s
+attentionpatternsandMLPstatusbetweennormalandglitchto-
+intermediatelayersandobservedtheimpactonthefinaloutput.
+kensacrossdifferentlayersoftheLlama2model.Wefindthatthe
+differencescausedbynormalandglitchtokensperlayerarenot AselucidatedinSection3.2,glitchtokensinthemodelpredom-
+uniformlydistributed.TheattentionpatternsandMLPstatusex- inantlyaffectthedownstreamlayersclosetotheoutput,notably
+hibitgreaterdifferencesinthedownstreamlayersclosertothe impactingattentionpatternsandMLPstatusinspecifickeylayers.
+output,e.g.,layers19-31.Thisfindingsuggeststhattheimpactof ThisrevelationisinstrumentalinshapingourapproachofGlitch-
+glitchtokens,althoughmayresultinnegligibleerroneousresults Prober. By strategically focusing our efforts on key layers, we
+infrontlayers,isamplifiedalongwiththepropagation,leadingto cansignificantlyreducecomputationaloverheadwhileachieving
+unexpectedoutputsintheend. acomparablelevelofdetectionandfixefficacytotraversingall
+===== PAGE 5 =====
+GlitchProber:AdvancingEffectiveDetectionandMitigationofGlitchTokensinLargeLanguageModels Conferenceacronym’XX,June03–05,2018,Woodstock,NY
+Wasserstein Distance
+0.0025 0.040
+0.12
+0.035
+0.0020 0.10 0.030
+0.0015 0.08 0.025
+0.06 0.020
+0.0010 0.015
+0.04
+0.010
+0.0005 0.02 0.005
+0.0000 0.00 0.000
+0 1 2 3 4 5 6 7 8 9 10 11 1l2a 1y3 e14r 1n5 u16 m 17 b 18e 1r9 20 21 22 23 24 25 26 27 28 29 30 31 0 1 2 3 4 5 6 7 8 9 10 11 1l2a 1y3 e14r 1n5 1u6 m 17 b 18e 1r9 20 21 22 23 24 25 26 27 28 29 30 31 0 1 2 3 4 5 6 7 8 9 10 11 1l2a 1y3 e14r 1n5 1u6 m 17 b 18e 1r9 20 21 22 23 24 25 26 27 28 29 30 31
+(a) Attention Pattern (b) MLP Gate (c) MLP Data
+Figure2:Wassersteindistanceoftheprobabilitydistributionsbetweenglitchtokensandnormaltokensindifferentintermediate
+layersofLlama2model
+Qwen-7B-Chat
+Glitch Tokens Normal Tokens
+0 0.2 0.4 0.6 0.8 1 (a) Attention Pattern
+MLP Gate MLP Data (b) MLP Status
+ycneuqerF
+PCA dim2
+1mid
+ACP
+0.15
+0.00
+PCA dim2
+1mid
+ACP
+Mistral-7B-Instruct
+Glitch Tokens Normal Tokens
+0 0.2 0.4 0.6 0.8 1 (c) Attention Pattern
+ycneuqerF
+0.15
+0.00
+PCA dim2
+MLP Data (d) MLP Status
+1mid
+ACP
+PCA dim2
+1mid
+ACP
+4.1 DetectingGlitchTokensviaGlitchProber
+GlitchProberidentifiesanddetectsglitchtokensthatcausemodel
+outputerrorsbyanalyzingtheintermediatelayeractivationstates
+ofTransformerlanguagemodelswhenprocessingtokens.Themain
+workflowofthealgorithmisshowninFigure4.Thedetectional- gorithmof GlitchProberconsistsofthreemainsteps:feature
+extractionanddimensionreduction,SVM-basedglitchtokenclassi-
+fier,andglitchtokenidentificationandvalidation.
+4.1.1 FeatureExtractionandDimensionReduction. Glitch-
+Proberadoptsarandomsamplingstrategytoselectsamplesfrom
+MLP Gate the model’s token vocabulary𝑉 to form the sample set𝑆. The
+Figure3:Theexampledistributionofattentionpatterns,MLP
+choiceofsamplingrate𝛾 needstobalancebetweensamplesize
+gateandMLPdataforglitchtokens(showninredcolor)and
+andcomputationalefficiency.Alarger𝛾 leadstoalargersample
+normaltokens(inbluecolor)inQwen-7B-ChatandMistral-
+size and more accurate detection results but also incurs higher
+7B-Instruct.
+computationalcosts.Conversely,asmaller𝛾 resultsinasmaller
+samplesizeandfastercomputationbutmayaffectthedetection
+performance.Throughexperiments,wedeterminedthatwhen𝛾 is
+layers.Thus,thisapproachnotonlyoptimizestheefficiencyofour
+intherangeof[0.1,0.3],GlitchProberachievesagoodbalance
+methodsbutalsoensuresthatourinterventionsaretargetedwhere
+betweendetectionperformanceandefficiency.
+theyaremostneeded.Foradetailedintroductiontotheselection
+GlitchProberusesaunifiedrepetitivetasktoconstructinput
+strategyofkeylayers,pleaserefertoSection4.3.
+sequencesforglitchtokenidentificationinthesampleset𝑆.For
+Based on these ideas, we designed GlitchProber, which in-
+tokensinthesampleset𝑆,thealgorithmassignscorresponding
+tegratesdetectionandfixalgorithms.GlitchProber’sdetection
+categorylabelsaccordingtotheoutputresultsoftherepetitivetask.
+algorithmidentifiesandlocatesglitchtokenscausingmodeloutput
+Atthesametime,weextracttheattentionpattern,MLPgateand
+errorsbyanalyzingintermediatelayeractivationstates.Itrandomly
+MLPdatafeaturesinthemodel’sfirstforwardprocess.However,the
+samplesasubsetoftokensfromthevocabulary,teststhemusing
+dimensionoftheoriginalfeaturetensorsishigh,anddirectlyusing
+repetitivetasks,andextractsactivationfeaturesfromkeylayers.
+themtotraintheclassifierwouldleadtoexcessivecomputational
+Thesefeaturesundergodimensionalityreductionandarelabeled
+costs.Toimprovecomputationalefficiency,weadoptadimension
+basedonrepetitivetaskoutcomes.Aclassifieristhentrainedwith
+reduction strategy. The PCA algorithm [1] is applied to reduce
+thelabeleddatatoassessunknowntokens.Finally,theremaining
+the dimension, mapping the original high-dimensional features
+tokensaredetectedindividuallyusingthetrainedSVMclassifier,
+toalow-dimensionalsubspacewhilemaximallypreservingthe
+andpredictionsareverifiedthroughrepetitivetasks.
+discriminativeinformationofthefeatures.Throughexperiments,
+GlitchProber’sfixalgorithmcorrectstheanomalousactiva-
+wefoundthatwhenthedimension𝑃 ofthereducedfeaturesis
+tionpatternsofglitchtokensbyadjustingactivationvaluesinthe
+intherangeof[50,200],agoodbalancebetweencomputational
+model’sintermediatelayers,eliminatingtheirnegativeimpacton
+efficiencyandinformationretentioncanbeachieved.Therefore,
+themodeloutput.Itfirstcalculatesactivationstatisticsofnormal
+weset𝑃 =75asthedefaultdimensionreductionparameter.
+tokensinkeylayersandidentifiesneuronsthatareconsistently
+activatedorsilentinmostnormaltokens.Then,itcomparesthese
+neurons’activationsbetweennormalandglitchtokens,calculat- 4.1.2 SVM-basedGlitchTokenClassifier. GlitchProbertrains
+ingsuppressionratiocoefficientsforanomalousactivationsand anSVMclassifierusingthelow-dimensionalfeaturerepresentation
+activation values to promote silent neurons. Finally, it rectifies matrix𝐹 ofthesampleset𝑆andthecorrespondingcategorylabels.
+theactivationvaluesofglitchtokensinkeylayersbasedonthese ThetrainedSVMclassifierwillbeusedforsubsequentglitchassess-
+coefficientsandvalues,automaticallyfixingtheglitchtokens. mentofunknowntokens.SVMisabinaryclassificationalgorithm
+===== PAGE 6 =====
+Conferenceacronym’XX,June03–05,2018,Woodstock,NY ZhiboZhang,WuxiaBai,YuxiLi,MarkHuasongMeng,KailongWang,LingShi,LiLi,JunWang,andHaoyuWang
+Labels
+Token Vocabulary Sample Repetitive Open-Source LLM N G N Training
+très ниче Found Tele Tokens Task Forward 1 Data Collection Set
+fields später Ссылки ást Other Input Embedding Forward 2 Labeling N N N
+Tokens
+Template Forward n N N G Training
+Classifier
+Detailed Forward 1 Select Key
+Layers
+Layer 0
+Layer 1 MLP gate At H ten o t o io k n Features PCA GN NN … NG
+Q A Q tt A e K n tt t e i K n on tiVon V ML M P L d P a t g a ate O E p m en b - e S d o d u i r n c g e LLM Forward 1 Se L le a c y t e K rs ey M P L a P tt e G r a n te Post-processing MLP data
+MLP Data GG … NN …
+… … … …
+…
+… …
+…
+Layer N-1 MLP gate Attention Q K V
+MLP data
+Figure4:GlitchProberworkflowfordetectingglitchtokens.Theredarrowsrepresentthedataflowduringthetraining
+process,whiletheblackarrowsrepresentthedataflowduringthedetectionprocess.
+thatisparticularlysuitableforproblemswithhigh-dimensionalfea- Algorithm1:GlitchProber(Detection)
+turespaces,whichalignswellwiththecharacteristicsoftheglitch Input:TokenVocabulary𝑉;PCADimension𝑃;SampleRate𝛾;
+tokendetectiontaskinGlitchProber.Besides,SVMhashigher KeyLayers[]
+computationalefficiencyandshortertrainingtimewhenhandling Output:Glitchtokenset𝐺;Normaltokenset𝑁
+high-dimensionalfeaturescomparedtootherbinaryclassification 1 𝑆←randomSample(𝑉,𝛾);
+algorithms.Thathelpsachieverapidreal-timedetectionofglitch 2 foreachToken∈𝑆do
+tokensinGlitchProber.Therefore,weadoptSVMastheclassifier 3 SampleFeatures←hookModel(Token,KeyLayers);
+inthedetectionalgorithmof GlitchProber. 4 SampleLabels←validateGlitch(Token);
+5 end
+4.1.3 GlitchTokenIdentificationandValidation. Thetokens 6 𝐹 ←PCA(SampleFeatures,𝑃);
+inthetokenvocabularythatwerenotsampledareindividually 7 Classifier←trainClassifier(𝐹,SampleLabels);
+detected.Thetokentobedetectedisinputintothesamerepetitive 8 foreachToken∈𝑉 do
+taskasinthetrainingphase,anditsfeaturesattentionpatterns, 9 ifToken∉𝑆then
+MLPgate,andMLPdataareextractedinthemodel’sfirstforward 10 Feature←PCA((hookModel(Token,KeyLayers)),𝑃);
+module.Subsequently,thetrainedSVMclassifierisusedtomake 11 ifclassify(Classifier,Feature)==‘Normal’then
+predictionsbasedontheextractedfeatures. 12 𝑁 ←Token;
+If a token is predicted as “glitchy”, the algorithm will input 13 else
+thistokenintothemodelandfurtherusetherepetitivetaskto 14 ifvalidateGlitch(Token)==‘Glitch’then
+validateit.Ifthemodelcancorrectlyrepeatthetoken,weconsider 15 𝐺←Token;
+itasapotentialnormaltoken,andtheSVMclassifiermayhave 16 else
+madeafalsepositiveprediction.Throughthispost-processingstep, 17 𝑁 ←Token;
+GlitchProbercaneffectivelyreducethefalsepositiverateofglitch 18 end
+tokendetectionandimprovetheprecisionofdetection.Finally, 19 end
+GlitchProberoutputstwosets:thesetofglitchtokens𝐺 andthe 20 end
+setofnormaltokens𝑁. 21 end
+4.1.4 DetectionProcessAlgorithm. Thepseudocodeforthe
+detectionalgorithmof GlitchProberisshowninAlgorithm1.
+Initially, the algorithm samples a subset of tokens (𝑆) from the
+vocabulary(𝑉)basedonapredefinedsamplingrate(𝛾)(line1).For
+4.2 FixingGlitchTokensviaGlitchProber
+eachtokeninthissubset,thealgorithmextractsrelevantfeatures
+usingatransformermodeloverspecifiedkeylayersandassigns We further explore the possibility of correcting the anomalous
+labelsindicatingwhethereachtokenisglitchy(lines2-5). activationpatternsofglitchtokenstonormalpatternsbyadjusting
+Followingthefeatureextraction,thealgorithmappliesPCAto theactivationvaluesofthemodel’sintermediatelayers,thereby
+reducethedimensionofthesefeaturestoalower-dimensionalspace eliminatingtheirnegativeimpactonthemodeloutput.Basedonthe
+(𝑃)(line6).Thereducedfeatureset(𝐹)isthenusedtotrainaSVM ideaofadjustingneuronactivationvaluestoeliminatetheinfluence
+classifierwiththeassignedglitchlabels(line7). ofglitchtokens,wefocusontwotypesofneuronsinnormaltokens,
+Fortokensnotincludedintheinitialsample,thealgorithmuses i.e.,theneuronsthatareactivatedinthevastmajorityofnormal
+thetrainedSVMclassifiertopredictwhethereachtokenisnormal tokens,andtheneuronsthatarenotactivatedinanynormaltokens.
+oraglitch(lines8-12).Tokensclassifiedasglitcheswillundergo Thenwecomparethedifferencesinactivationvaluesofthesekey
+afurthervalidationsteptoconfirmtheirstatus,effectivelymini- neuronsbetweennormaltokensandglitchtokens.Bysimulating
+mizingthefalsepositiverate(lines14-18).Finally,thealgorithm thosenormalactivationpatterns,weachieveadaptivelyadjustment
+compilesandoutputstwosets,namelyglitchtokenset(𝐺)and oftheactivationvaluesofglitchtokens.Theoverallapproachis
+normaltokenset(𝑁). illustratedinFigure5.
+===== PAGE 7 =====
+GlitchProber:AdvancingEffectiveDetectionandMitigationofGlitchTokensinLargeLanguageModels Conferenceacronym’XX,June03–05,2018,Woodstock,NY
+Open-Source LLM Forward 1
+G G G
+Forward 2 Glitch
+Answer
+Forward n
+Repetitive
+Task
+Input Correct
+Template Answer
+…
+Modified Forward 1
+Modified Forward 2
+Modified Forward n
+…
+4.2.2 ActivationValueAdjustment. Whenthehookedmodel
+processesdetectedglitchtokens,GlitchProberintervenesinthis
+process,makingtrend-basedadjustmentstotheneuronsidenti-
+fiedby𝑁𝑒𝑢𝑛↑ and𝑁𝑒𝑢𝑛↓.Forneuronsin𝑁𝑒𝑢𝑛↑ thatshouldbe
+Embedding activatedbuthaveinsufficientactivationinglitchtokens,thealgo-
+rithmuses𝛽asanamplificationfactortopromotetheiractivation.
+Conversely,forneuronsin𝑁𝑒𝑢𝑛↓thatshouldbesuppressedbut
+areabnormallyactivatedinglitchtokens,thealgorithmuses𝛼asa
+reductionfactortosuppresstheiranomalousactivation.Thefactors
+Modified Forward 𝛽 and𝛼 arenamedadjustmentfactors,whichplayacrucialrole
+MLP gate N
+🔍
+N N Modified MLP gate
+intheglitchtokenfixingprocess.Forthecalculationof𝛽 and𝛼,
+AMtteLntPio gnate wefirstcalculatetheaverageactivationvaluedifferenceΔ𝐴𝑐𝑡↑of
+Attention Q K V Statistics & Adjust glitchtokensrelativetonormaltokensonhighlyactivatedneurons
+Q K V
+MLP data Modified MLP data (𝑁𝑒𝑢𝑛↑),andtheaverageactivationvalueratioΔ𝐴𝑐𝑡↓ onlowly
+MLP data Key Layers activatedneurons(𝑁𝑒𝑢𝑛↓).
+Other Layers
+Figure5:GlitchProberworkflowforfixingglitchtokens. Δ𝐴𝑐𝑡↑ = 1 ∑︁ (𝐴𝑐𝑡 [𝑖]−𝐴𝑐𝑡 [𝑖]) (9)
+|𝑁𝑒𝑢𝑛↑| normal glitch
+𝑖∈𝑁𝑒𝑢𝑛↑
+4
+fi
+.
+r
+2
+s
+.1
+tran
+N
+d
+o
+o
+r
+m
+m
+l
+a
+y
+l
+s
+T
+a
+o
+m
+k
+p
+e
+l
+n
+es
+A
+a
+ct
+s
+i
+u
+v
+b
+a
+s
+t
+e
+i
+t
+o
+o
+n
+f
+V
+n
+a
+o
+l
+r
+u
+m
+e
+a
+S
+l
+t
+t
+a
+o
+t
+k
+is
+e
+t
+n
+ic
+s,
+s.
+i.e
+G
+.,
+l
+𝑁
+it
+′
+ch
+⊂
+P
+𝑁
+ro
+,
+b
+t
+e
+o
+r
+Δ𝐴𝑐𝑡↓ = 1 ∑︁
+(cid:18) 𝐴𝑐𝑡
+glitch
+[𝑖] (cid:19)
+(10)
+calculatetheactivationvaluedistributionofnormaltokensinthe
+|𝑁𝑒𝑢𝑛↓|
+𝑖∈𝑁𝑒𝑢𝑛↓
+𝐴𝑐𝑡
+normal
+[𝑖]
+targetlayers.Wesetthesamplingrateto𝛾,whichisconsistent
+Subsequently,throughlineartransformationandrangerestric-
+withthesamplingrateintheglitchtokendetectionphase.
+tion,thealgorithmmapsΔ𝐴𝑐𝑡↑andΔ𝐴𝑐𝑡↓toappropriatenumerical
+FortheMLPmoduleineachlayer,wecalculatetheactivation
+statisticsofthetokensinthenormaltokenset𝑁′.Wedefinetwo
+intervalstoobtainthevaluesof𝛽and𝛼,respectively.
+setsofneuronindicesas𝑁𝑒𝑢𝑛↑and𝑁𝑒𝑢𝑛↓basedontheiractiva- 𝛽 =𝑘 1 ·Δ𝐴𝑐𝑡↑+𝑏 1 (11)
+tionpatterns,where𝐴𝑐𝑡[𝑖]representstheactivationvalueofthe
+𝑖-thneuronintheMLPmodule,and𝑚isthepredefinedthreshold. 𝛼 =𝑘 2 ·Δ𝐴𝑐𝑡↓+𝑏 2 (12)
+Theconstants𝑘 1,𝑏 1,𝑘 2,and𝑏 2arederivedthroughanadaptive
+𝑁𝑒𝑢𝑛↑ ={𝑖|𝐴𝑐𝑡[𝑖] >𝑚forover99%oftokensin𝑁′} (7) processtailoredtothespecificdynamicsofeachmodel.Asetof
+𝑁𝑒𝑢𝑛↓ ={𝑖|𝐴𝑐𝑡[𝑖] ≤𝑚foralltokensin𝑁′} (8) defaultvaluesisprovided,whichcanbeadjustedbasedonempirical
+datatooptimizethecorrectionprocessfordifferenttypesofmodels.
+𝑁𝑒𝑢𝑛↑denotesthesetofkeyneuronsthatexhibithighactivation Theyarecrucialforensuring𝛽and𝛼effectivelymodulateneuron
+levels,surpassingpredefinedthreshold𝑚,acrosssampletokenset activationswhilemaintainingsystemstabilityandperformance.
+𝑁′.Giventhatactivatedneuronsconstituteasmallproportionof AftertheadjustmentoftheMLPactivationvaluesiscompleted,
+thetotalneurons,weconsideraneurontobeakeyneuronifitis weinputthecorrectedactivationvaluesbackintothesubsequent
+activatedinover99%ofthetokens.Conversely,𝑁𝑒𝑢𝑛↓represents layers,allowingthemodeltocontinuetheforwardpropagation
+the set of key neurons that exhibit consistently low activation untilthefinalfixedresultisoutput.Thisprocesscorrectsoneach
+levels,fallingbelow𝑚.Weconsideraneurontobeakeyneuronin tokeninthedetectedglitchtokenset𝐺.
+𝑁𝑒𝑢𝑛↓ifitsactivationlevelremainsbelowthethreshold𝑚forall 4.2.3 Fixing Process Algorithm. Based on Section 4.2.2, we
+tokensin𝑁′.Theseneuronscanbeconsideredasthekeyfeatures presentthepseudocodeforthefixalgorithmof GlitchProber
+forsuppressingnoise,astheyareconsistentlyinactivefornormal
+inAlgorithm2.Thealgorithmbeginsbysamplingasubset(𝑁′)
+tokens.Byidentifyingthesetwosetsofneuronindicesbasedon
+ofnormaltokensfromthefullsetofnormaltokens(𝑁)(line1).
+theiractivationpatterns,wecancreateaprofileoftheexpected Thenitcomputesthestatisticaldistributionofactivationvalues
+behaviorofnormaltokensateachMLPmodule.Thosemethods
+acrosskeyneuronsinthesubset,distinguishing𝑁𝑒𝑢𝑛↑and𝑁𝑒𝑢𝑛↓
+ensuretherecordedneuronstakethemostinformativefeatures (line2).Afterthatthealgorithmcalculatestheadjustmentfactors
+whenwemitigatetheinfluenceofnoiseandirrelevantinformation 𝛽and𝛼 fortheidentifiedkeyneurons(line3-4).
+causedbyglitchtokens.
+Foreachglitchtokenintheset𝐺,thealgorithmiterativelyap-
+NotethatweonlyadjusttheactivationvaluesoftheMLPmod- pliestheseadjustmentsacrossspecifiedlayers(i.e.,KeyLayers)of
+uleandnottheattentionpatterns.Attentionpatternscapturethe
+themodel(lines5-7).Neuronsin𝑁𝑒𝑢𝑛↑havetheiractivationval-
+relativeimportancebetweentokens,andmodifyingthemmaydis- ues increased by 𝛽, amplifying their response to mimic normal
+rupt token dependencies and introduce noise. In contrast, MLP activationpatterns(lines8-10).Conversely,neuronsin𝑁𝑒𝑢𝑛↓have
+activationvaluesreflectthemodel’sunderstandingofeachtoken theiractivationvaluesreducedbydividingby𝛼,suppressingany
+independently,andadjustingthesevalueshaslessimpactontoken abnormalactivations(lines11-13).Eachadjustedactivationisrein-
+relationships.ByonlyadjustingMLPactivationvalues,weaimto tegratedintothemodel’sprocessingflow,allowingittocontinue
+fixglitchtokenswithoutintroducingadditionalnoise. withforwardpropagationwiththecorrectedvalues(line14).
+===== PAGE 8 =====
+Conferenceacronym’XX,June03–05,2018,Woodstock,NY ZhiboZhang,WuxiaBai,YuxiLi,MarkHuasongMeng,KailongWang,LingShi,LiLi,JunWang,andHaoyuWang
+Algorithm2:GlitchProber(Fix) EvaluationofDetectionBaselines.Toevaluatetheperformance
+Input:Glitchtokenset𝐺;Normaltokenset𝑁;SampleRate𝛾; ofGlitchProber,wecompareditwithtwoimplementedbench-
+Threshold𝑚;KeyLayers[] markschemesandarecenttestingmethod,GlitchHunter.
+1 𝑁′←randomSample(𝑁,𝛾);
+(1) ExhaustiveSearch:Eachtokeninthetokenlistisindividually
+2 𝑁𝑒𝑢𝑛↑,𝑁𝑒𝑢𝑛↓←statisticsNeuron(𝑁′,𝑚);
+fedintothemodel,whichperformstaskssuchasparaphrasing,
+3 𝛽←statisticsBeta(𝑁′,𝑁𝑒𝑢𝑛↑);
+spelling,andlengthcalculationforeachtoken.
+4 𝛼←statisticsAlpha(𝑁′,𝑁𝑒𝑢𝑛↓); (2) Rule-basedRandomSampling:First,randomlyselecthalf
+5 foreachToken∈𝐺do
+ofthetokensfromthelanguagemodeltoformacandidateset.
+6 forLayer∈KeyLayersdo
+7 𝐴𝑐𝑡𝑖𝑣𝑎𝑡𝑖𝑜𝑛←hookModel(Token,Layer); SincecommonEnglishwordstypicallydonotbecomeglitch
+8 foreachNeuron∈𝑁𝑒𝑢𝑛↑do tokens,usetheNaturalLanguageToolkit(NLTK)toremove
+9 𝐴𝑐𝑡[Neuron]←𝐴𝑐𝑡[Neuron]+𝛽; high-frequencyEnglishwordsfromthecandidateset.There-
+10 end mainingtokensareconsideredpotentialglitchtokens.
+11 foreachNeuron∈𝑁𝑒𝑢𝑛↓do (3) GlitchHunter:Thisisthestate-of-the-artautomateddetec-
+12 𝐴𝑐𝑡[Neuron]←𝐴𝑐𝑡[Neuron]/𝛼; tionmethodforglitchtokens[20].
+13 end EvaluationMetricsofDetection.Forefficiencyevaluation,we
+14 hookModel(Token,Layer)←𝐴𝑐𝑡𝑖𝑣𝑎𝑡𝑖𝑜𝑛; considertheTimeCostrequiredtoprocessallglitchtokensin
+15 end
+thecompletetokenlistofamodel.ForGlitchProber,itencom-
+16 end
+passes the total duration including feature extraction, classifier
+training,identificationandvalidation.Foreffectivenessevaluation,
+weconsiderTruePositive,Precision,RecallandF1-Score.
+4.3 KeyLayersSelection EvaluationSettings.Inourdetectionexperiments,weevaluated
+theperformanceof GlitchProberwithSVMregularizationpa-
+InthedesignofourGlitchProber’sdetectionandfixalgorithms, rameteranddegree[32,36]setto𝐶 = 1,𝑑𝑒𝑔𝑟𝑒𝑒 = 3.Weemploy
+wefocusedonexploitingtheattentionpatternandMLPstatusfea- 𝛾 =0.1forrandomsamplingandprincipalcomponentsto𝑃 =75
+tureswithincertainkeylayers.Therationalebehindselectingthese
+forPCA.Fortherule-basedrandomsamplingmethods,wecon-
+keylayersstemsprimarilyfromourempiricalfindingsoutlinedin
+ducted100independentexperimentsandaveragedtheresultsto
+Finding2(Section3.2),whichhighlightedthatglitchtokenspredom-
+obtainstatisticallysignificantconclusions.FortheGlitchHunter
+inantlyaffectthemodel’sdownstreamlayersclosertotheoutput.
+method,weusedthedefaultsettingsfromtheoriginalpaper[20].
+Forinstance,inLlama2,thispertainstolayers19to31.Further
+refiningourselection,weencounteredacounter-intuitivediscov-
+5.2 RQ3(EfficientDetection):Howefficientis
+ery:modifyingfeaturesinlayersexceedinglyclosetotheoutput
+ourapproachinidentifyingglitchtokens
+paradoxicallydiminishedtheeffectivenessofourfixalgorithms.
+Thelayersprecedingthefinaloutputarecrucialfortailoring acrossdifferentLLMs?
+responsesbasedonprecedingcomputations;alterationsinthese
+ToevaluatetheefficiencyofGlitchProber,timeoverheadandtheac-
+layerscandisruptrepresentationalbalances,leadingtodegraded
+curacycomparisonresultsofvariousmethodsonfivelargemodels
+performance.InourapproachforLlama2,wedesignatedlayers19to
+areshowninTable2andTable3.
+28askeylayers,optimallypositionedinthemiddletolowersections
+OurexperimentalresultsdemonstratethatGlitchProberreached
+ofthemodel’sarchitecture.Thisstrategicplacementensuresthat
+adetectionefficiencyadvantage.Meanwhile,GlitchProberachieves
+ourinterventionseffectivelymitigatetheeffectsofglitchtokens
+a100%precisionwhichmatchestheperformanceofbothGlitch-
+whilepreservingthemodel’srobustness.
+Hunterandtheexhaustivesearchbenchmarkmethod.Thissig-
+nifiesGlitchProber’sminimalfalsepositiverate.Furthermore,
+5 EVALUATIONOFGLITCHTOKEN
+GlitchProberachievesarecallrateof64.47%,surpassingGlitch-
+DETECTION
+Hunter’s26.52%.TheF1-scoreindicatesthatGlitchProberstrikes
+5.1 Experimentsetup afinebalancebetweenprecisionandrecall,efficientlydetecting
+glitchtokenswhilemaintaininghighaccuracy.
+ExperimentEnvironment.Allexperimentsareperformedona
+workstationwithUbuntu22.04.3LTSand250GBmemory,and2
+AnswertoRQ3
+A100GPUwith80GBmemoryeach.
+LLMSelection.Wethoroughlyevaluatedourproposedmethod
+GlitchProberachievesperfectaccuracyacrossalltestcases
+usingadiversesetofcomputationalmodels.Weselectedfivewidely withlowtimeoverhead,exhibitingsuperiorstabilityandper-
+recognized,open-sourcemodels,includingLlama-2-7b-chat[35], formance in glitch token detection. Its efficiency gains are
+Mistral-7B-Instruct-v0.1[17],Qwen-7B-Chat[5],Gemma-2b-it[14], primarily attributed to its strategic adoption of small-scale
+andYi-6B-Chat[3].Thesemodelsservedasthesubjectsforour samplingandintermediatelayerfeatureextractiontechniques,
+in-depthanalysis,allowingustoassesstheversatilityandeffective- significantlyenhancingdetectionefficacy.
+nessofourmethodacrossvariousreal-worldapplications.Table1
+providesanoverviewofthesemodels’parameters.
+===== PAGE 9 =====
+GlitchProber:AdvancingEffectiveDetectionandMitigationofGlitchTokensinLargeLanguageModels Conferenceacronym’XX,June03–05,2018,Woodstock,NY
+Table1:Summaryofmodelsinevaluation
+Table4offersadetailedcomparativeanalysisofGlitchProber
+Numberof Vocabulary Hidden Intermediate Attention alongsideitsvariants.WithrespecttotheF1-score,GlitchProber
+ModelName
+Parameters Size Layers Size Heads
+markedlysurpassesGlitchProber-No-Post,demonstratingav-
+Llama-2-7b-chat 6.74B 32,000 32 11,008 32
+Mistral-7B-Instruct-v0.1 7.24B 32,000 32 14,336 32 erageimprovementsof0.32.Thesefindingsunderscorethevital
+Qwen-7B-Chat 7.72B 151,936 32 22,016 32 importanceofimplementingrobustpost-classificationenhance-
+Gemma-2b-it 2.51B 256,000 18 16,384 8
+mentstoboostoverallperformance.Furthermore,theabsenceof
+Yi-6B-Chat 6.06B 64,000 32 11,008 32
+PCAinGlitchProber-No-PCAleadstosubstantialincreasesin
+Table2:TimecostcomparisonofGlitchProberandother memoryusagebeyondthemaximumcapacityofourserver,result-
+baselinesondifferentLLMs. ingintheincompletionof GlitchProber-No-PCA.Thisstarkly
+TestModel ExhaustiveSearchGlitchHunterGlitchProber(ours) highlightsthenecessityofdimensionalityreductionasameansto
+Llama-2-7b-chat 619min43s 74min11s 61min38s optimizeresourceallocationandensuresystemstability.
+Mistral-7B-Instruct-v0.1 651min17s 64min26s 42min39s
+Qwen-7B-Chat 2,228min23s 720min42s 92min48s
+Gemma-2b-it 3,575min9s 681min16s 96min43s AnswertoRQ4
+Yi-6B-Chat 974min4s 825min25s 140min57s
+AverageTimeCost 1,609min42s 473min11s 89min9s ThePCAdimensionalityreductionandthepost-processare
+crucial components for GlitchProber. Omitting either of
+Table 3: Performance comparison of GlitchProber and thesecomponentsleadstoasignificantdecreaseineffective-
+otherbaselinesondifferentLLMs ness,underminingtheutilityof GlitchProber.
+TestModel Metric Rule-based GlitchHunter GlitchProber
+RandomSampling 6 EVALUATIONOFGLITCHTOKENFIX
+TP 2,936 1,955 4,446
+Llama-2-7b-chat Precision 24.74% 100.00% 100.00% 6.1 Experimentsetup
+Recall 45.70% 30.43% 69.22%
+F1-score 0.3210 0.4724 0.8181
+TP 1,288 1,233 1,873
+EvaluationBaselinesofFix.Duetothelackofexistingmethods
+Mistral-7B-Instruct-v0.1 Precision 11.44% 100.00% 100.00% forfixingglitchtokens,wecomparedGlitchProberwithabench-
+Recall 46.35% 44.37% 67.41%
+F1-score 0.1836 0.6147 0.8053 markscheme:arule-basedfixmethod,toverifyitseffectiveness.
+TP 15,419 4,031 19,366
+Specifically,therule-basedfixmethoddoesnotrelyonspecificac-
+Precision 21.04% 100.00% 100.00%
+Qwen-7B-Chat Recall 50.24% 14.42% 63.08% tivationvaluedifferencestodetermine𝛼and𝛽.Instead,itdirectly
+F1-score 0.2966 0.2521 0.7736
+TP 13,777 3,240 17,387 usesafixedvaluetoadjustactivationvaluesatthesameneuron
+Gemma-2b-it Precision 11.30% 100.00% 100.00% positionsasGlitchProber.
+Recall 49.27% 10.56% 62.18%
+F1-score 0.1838 0.1910 0.7668 EvaluationMetricsofFixExperiments.Weusedtwotestmet-
+TP 3,215 2,662 4,900
+Precision 13.10% 100.00% 100.00% ricstoevaluatetheperformanceofthefixmethods:thenumberof
+Yi-6B-Chat
+Recall 39.67% 32.84% 60.45% repairedglitchtokens(RepairedTokens)andtherepairrate(Repair
+F1-score 0.1969 0.4944 0.7535
+Precision 16.32% 100.00% 100.00% Rate).Therepairraterepresentstheproportionofglitchtokens
+AveragePerformance Recall 46.24% 26.52% 64.47% successfullyrepairedoutofallglitchtokens.Itiscalculatedusing
+F1-score 0.2364 0.4049 0.7835
+thefollowingformula:
+Table4:Comparisonofperformanceandmemoryusagefor RepairedTokenNumber
+RepairRate= (13)
+GlitchProberwithdifferentfeatureconfigurationsacross TotalGlitchTokenNumber
+variouslanguagemodels.
+Thesetwometricscanintuitivelyreflecttheactualeffectivenessof
+Model MetricsGlitchProberGlitchProber-No-PostGlitchProber-No-PCA
+thefixmethods.
+F1-Score 0.8529 0.6097 –
+Llama-2-7b-chat Memory 103.71GB 101.22GB 250.00GB EvaluationSettings.Inourfixexperiments,weremainthe
+Mistral-7B-Instruct-v0.1 F
+M
+1
+e
+-S
+m
+c
+o
+o
+r
+r
+y
+e
+10
+0
+7
+.8
+.1
+6
+1
+5
+G
+2
+B 10
+0
+2
+.5
+.6
+4
+7
+2
+G
+9
+B 250.0
+–
+0GB
+same𝛾 =0.1forrandomsamplingandchoosethesamekeylayers.
+Qwen-7B-Chat
+F1-Score 0.8854 0.5510 – Forthethreshold,weset𝑚=1todetermine𝑁𝑒𝑢𝑛↑and𝑁𝑒𝑢𝑛↓.
+Memory 109.03GB 101.20GB 250.00GB
+F1-Score 0.8143 0.4226 –
+gemma-2b-it
+Memory 131.04GB 127.96GB 250.00GB 6.2 RQ5(EffectiveFix):Howeffectiveisour
+F1-Score 0.8718 0.4507 –
+Yi-6B-Chat
+Memory 83.32GB 82.76GB 250.00GB approachinfixingglitchtokensacross
+Note:‘–’denotesincompleteexperimentduetoexceedingthemaximummemoryofourserverof250.00GB.
+differentLLMs?
+5.3 RQ4(AblationStudy):Howdothedifferent
+componentsof GlitchProberaffectthe WecomparedtheperformanceoftheGlitchProberfixalgorithm
+withtherule-basedfixmethodintermsofrepairedtokensand
+detectionresults?
+repairrateunderthesameconditionstoevaluatetheeffectiveness
+ToassesstheimportanceofthecomponentsinGlitchProber,we of GlitchProber.Table5presentstheperformancecomparison
+performedanablationstudyacrossfivemodels.Wedevelopedtwo ofthetwomethodsacrossdifferenttestmodels.
+variants: GlitchProber-No-PCA and GlitchProber-No-Post. Theresultsindicatethatalthoughtherule-basedfixmethoduses
+GlitchProber-No-PCAomitsthePCAduringfeatureprocessing, fixed𝛼 and𝛽values(𝛼 =4and𝛽 =1.5)andlacksflexibility,itcan
+whileGlitchProber-No-Posteliminatesthefinaltokenvalidation stilldirecttheactivationorinhibitionofneuronsassociatedwith
+stepsintheoriginalGlitchProber.Thecomprehensiveresultsare glitchtokens,achievingacertaindegreeoffix.Thisdemonstrates
+showninTable4. thatadjustingneuronactivationvaluestocorrecttheabnormal
+===== PAGE 10 =====
+Conferenceacronym’XX,June03–05,2018,Woodstock,NY ZhiboZhang,WuxiaBai,YuxiLi,MarkHuasongMeng,KailongWang,LingShi,LiLi,JunWang,andHaoyuWang
+Table 5: Performance comparison of GlitchProber and
+AsdepictedinTable6,nosignificantdifferencesareobservedin
+Rule-basedmethodondifferentmodels.
+thetimeconsumptionacrossvariousgroupsofhyperparameters
+Method
+Model Metric andfeatures.Therefore,theaverageF1-score,asillustratedinFig-
+Rule-basedFix GlitchProber
+ure6,isconsideredforcomparison.ThecomparisonoftheF1-score
+RepairedTokens 3,805 4,021
+Llama-2-7b-chat withoutpost-processingischosenasitmoreaccuratelyreflectsthe
+RepairRate 59.22% 62.58%
+RepairedTokens 359 1,045 inherenteffectivenessofthedifferentfeaturesandhyperparame-
+Mistral-7B-Instruct-v0.1
+RepairRate 12.92% 37.60% ters.Figure6clearlyshowsthatthehyperparametergroupinthe
+RepairedTokens 10,645 14,765 lowerrightcornerachievesthehighestF1-scoreof0.6117without
+Qwen-7B-Chat
+RepairRate 34.68% 48.11% post-processing,whichisnoteworthy.Consequently,𝐶 = 1and
+RepairedTokens 9,865 13,638
+Gemma-2b-it degree=3areselectedasthehyperparametersforSVM.Allthree
+RepairRate 35.28% 48.77%
+RepairedTokens 3,390 4,317 featuresarechosenforthedetectionprocess,andtwoMLP-based
+Yi-6B-Chat
+RepairRate 41.83% 53.26% featuresarechosenforthefixprocess.
+RepairedTokens 5,613 7,758
+Average
+RepairRate 36.79% 50.06%
+Table6:PostprocesstimeofGlitchProberusingvarious
+SVMparameterconfigurations(inseconds) Attention pattern
+C=0.1 C=0.5 C=0.5 C=1
+FeatureType
+degree=2 degree=2 degree=3 degree=3 MLP gate
+Attn_pattern 1,413.88 1,453.21 1,360.12 1,357.70
+MLP_gate 1,407.36 1,458.88 1,436.23 1,445.11 MLP data
+MLP_data 1,473.43 1,541.10 1,579.08 1,581.00
+Attn_pattern+MLP_gate 1,410.79 1,438.57 1,444.74 1,472.50
+Attn_pattern+MLP_data 1,427.43 1,479.34 1,514.72 1,513.41 Attention pattern
+MLP_gate+MLP_data 1,453.72 1,504.36 1,546.09 1,530.88 + MLP gate
+Attn_pattern+MLP_gate+MLP_data 1,444.23 1,471.85 1,502.46 1,500.23
+Attention pattern
++ MLP data
+behaviorofglitchtokensisaviableandeffectivefixstrategy.How-
+MLP gate
+ever,duetoitslackofspecificity,thefixeffectofthismethodis
++ MLP data
+relativelylimited.Incontrast,GlitchProberpreciselycalculates𝛼
+and𝛽,andselectivelyadjuststheactivationpatternsofkeyfeature Attention pattern
++ MLP gate
+neurons,achievinganaveragerepairrateof50.06%acrossthefive + MLP data
+models,outperformingtherule-basedmethod. Feature Type C=0.1 C=0.5 C=0.5 C=1
+degree=2 degree=2 degree=3 degree=3
+AnswertoRQ5
+Figure 6: Different Feature Combination Comparison for
+GlitchProberhaseffectivelyfixedglitchtokensacrossfive GlitchProber
+LLMs.Comparedtotherule-basedmethod,itskeyimprove-
+ment is the precise calculation of𝛼 and 𝛽, allowing better
+applicationtodifferentmodels. 7.2 Rationaleof GlitchProberversus
+ExhaustiveSearch
+7 DISCUSSION
+Inthecontextofexhaustivesearchmechanisms,LLMsarerequired
+7.1 HyperparametersChoiceof GlitchProber togenerate,onaverage,twentytokensatazerotemperaturesetting
+Inthissection,anexperimentisconductedtoillustratetheselection foreveryindividualtokenprocessed.Thiscomputationalmethod
+processfortheprincipalfeaturesinLLMsandthehyperparameters isbothintensiveandinefficient.Conversely,theimplementation
+inSVM.Specifically,theparameters𝐶 and𝑑𝑒𝑔𝑟𝑒𝑒 intheSVM’s ofGlitchProbernecessitatesmerelyasingleforwardprocessing
+polynomialkernelrequireelucidation.Theparameter𝐶,commonly steptocapturetheintermediatefeaturesoftheLLMforeachtoken.
+referredtoastheregularizationparameter,controlsthetrade-off Thisapproachsubstantiallyreduces95%ofredundantoperations
+betweenachievingalowerroronthetrainingdataandminimizing ofthoserequiredbythetraditionalexhaustivesearchmethod.
+themodelcomplexityforbettergeneralizationtonewdata.Ahigher
+7.3 GlitchTokenMitigationByFine-tuning
+valueof𝐶 triestofitthetrainingsetaswellaspossible(higher
+modelcomplexity),whilealowervalueleadstoamodelthatmight Byconstructingadatasetwithquestionsandanswersfortherepe-
+notperformaswellonthetrainingsetbutisbetteratgeneralizing. titiontask,weattempttomitigatetheglitchtokenphenomenonby
+Ontheotherhand,𝑑𝑒𝑔𝑟𝑒𝑒pertainstothedegreeofthepolynomial fine-tuningLLMs.However,fine-tuningLLMsalterstheparameters
+kernelfunctionandiscrucialfordefiningthecomplexityofthe ofthemodel,potentiallycompromisingitsbasicabilities.Forex-
+decisionsurface.Ahigher𝑑𝑒𝑔𝑟𝑒𝑒resultsinmorecomplexdecision ample,wefine-tunetheLlama-2-7b-chatwithadatasetcontaining
+boundaries,capableofcapturingmoreintricatepatternsinthedata. 3,000Q&Apairsofrepetitiontasks.Toevaluatethemodel’sbasic
+However,thisalsoincreasestheriskofoverfitting,particularlyin skills,weusethreewidely accepteddatasetsnamely GSM8K [8],
+scenarioswithnoiseandlimiteddatasamples[32,36]. HumanEval[6],andMMLU[16].Detailedresultspresentedonour
+===== PAGE 11 =====
+GlitchProber:AdvancingEffectiveDetectionandMitigationofGlitchTokensinLargeLanguageModels Conferenceacronym’XX,June03–05,2018,Woodstock,NY
+website[15]indicatethatthemodel’sabilityincodewritingand Lin,DayihengLiu,GaoLiu,ChengqiangLu,KemingLu,JianxinMa,RuiMen,
+solvingmathproblemspostfine-tuningissignificantlydiminished XingzhangRen,XuanchengRen,ChuanqiTan,SinanTan,JianhongTu,Peng
+Wang,ShijieWang,WeiWang,ShengguangWu,BenfengXu,JinXu,AnYang,
+comparedtotheoriginalmodel.Incontrast,GlitchProbermod-
+HaoYang,JianYang,ShushengYang,YangYao,BowenYu,HongyiYuan,Zheng
+ifiestheprocessofmodelcalculationwithoutalteringthemodel Yuan,JianweiZhang,XingxuanZhang,YichangZhang,ZhenruZhang,Chang
+parameters,therebypreservingthebasicabilitiesofLLMs. Zhou,JingrenZhou,XiaohuanZhou,andTianhangZhu.2023.QwenTechnical
+Report. arXiv:2309.16609[cs.CL]
+[6] MarkChen,JerryTworek,HeewooJun,QimingYuan,HenriquePondede
+7.4 ThreatstoValidity
+OliveiraPinto,JaredKaplan,HarriEdwards,YuriBurda,NicholasJoseph,Greg
+Brockman,AlexRay,RaulPuri,GretchenKrueger,MichaelPetrov,HeidyKhlaaf,
+Internal.Ourprimaryconcerninvolvestheselectionandcompu-
+GirishSastry,PamelaMishkin,BrookeChan,ScottGray,NickRyder,Mikhail
+tationofhyperparametersinboththedetectionandfixingphases Pavlov,AletheaPower,LukaszKaiser,MohammadBavarian,ClemensWinter,
+PhilippeTillet,FelipePetroskiSuch,DaveCummings,MatthiasPlappert,Fo-
+ofGlitchProber.Forthedetectionphase,wedetailtherationale
+tiosChantzis,ElizabethBarnes,ArielHerbert-Voss,WilliamHebgenGuss,Alex
+behindourchoicesthroughanexperimentdescribedinSection7.1. Nichol,AlexPaino,NikolasTezak,JieTang,IgorBabuschkin,SuchirBalaji,Shan-
+VariousfeaturetypesandhyperparametersfortheSVMconsis- tanuJain,WilliamSaunders,ChristopherHesse,AndrewN.Carr,JanLeike,Josh
+Achiam,VedantMisra,EvanMorikawa,AlecRadford,MatthewKnight,Miles
+tentlyoutperformtheestablishedbaselines.Inthefixingphase,the
+Brundage,MiraMurati,KatieMayer,PeterWelinder,BobMcGrew,DarioAmodei,
+linearcomputationof𝛼 and𝛽provesuntenable.Enhanceddiscus- SamMcCandlish,IlyaSutskever,andWojciechZaremba.2021.EvaluatingLarge
+sionandmanipulationoftheactivationvaluearerecommendedas LanguageModelsTrainedonCode. arXiv:2107.03374[cs.LG]
+[7] KrzysztofChoromanski,ValeriiLikhosherstov,DavidDohan,XingyouSong,
+futureresearchdirections. AndreeaGane,TamasSarlos,PeterHawkins,JaredDavis,AfrozMohiuddin,
+External.Threatsareassociatedwithourexperimentalframework. LukaszKaiser,etal.2020.Rethinkingattentionwithperformers.arXivpreprint
+arXiv:2009.14794(2020).
+Fortheperformanceofglitchtokensinintermediatelayers,we
+[8] KarlCobbe,VineetKosaraju,MohammadBavarian,MarkChen,HeewooJun,
+experimentonthreeLLMswithdifferentparametersandvocab- LukaszKaiser,MatthiasPlappert,JerryTworek,JacobHilton,ReiichiroNakano,
+ularysizes.Basedonthesefindings,GlitchProberexperiment ChristopherHesse,andJohnSchulman.2021.TrainingVerifierstoSolveMath
+WordProblems.arXivpreprintarXiv:2110.14168(2021).
+onfivedifferentLLMs,showingitsgeneralizability.Furthermore,
+[9] CorinnaCortesandVladimirVapnik.1995.Support-vectornetworks.Machine
+asGlitchProberisrequiredtoaccesstheintermediatedataof learning20,3(1995),273–297.
+theLLM,GlitchProberisonlyapplicabletoopen-sourceLLMs. [10] GeleiDeng,YiLiu,YuekangLi,KailongWang,YingZhang,ZefengLi,Haoyu
+Wang,TianweiZhang,andYangLiu.2024. MasterKey:AutomatedJailbreak
+Thetransferabilityof GlitchProberfromopen-sourceLLMsto AcrossMultipleLargeLanguageModelChatbots.InNDSS.
+closed-sourceLLMslikeGPT-4couldfurtherbeexplored. [11] GeleiDeng,YiLiu,KailongWang,YuekangLi,TianweiZhang,andYangLiu.
+2024.Pandora:JailbreakGPTsbyRetrievalAugmentedGenerationPoisoning.
+NDSSAISCC(2024).
+[12] Martin Fell. 2023. A Search for More ChatGPT / GPT-3.5 / GPT-4
+8 CONCLUSION "Unspeakable" Glitch Tokens. Online. https://www.lesswrong.com/
+posts/kmWrwtGE9B9hpbgRT/a-search-for-more-chatgpt-gpt-3-5-gpt-4-
+Inthiswork,werevealthatglitchtokenstriggerabnormalacti- unspeakable-glitch(Accessed:2024-05-05).
+vationcharacteristicsinthemodel’sattentionpatternsandMLP [13] JonasGeiping,AlexStein,ManliShu,KhalidSaifullah,YuxinWen,andTom
+Goldstein.2024.CoercingLLMstodoandreveal(almost)anything.arXivpreprint
+statusthroughsystematicempiricalstudy.Inspiredbythis,wepro- arXiv:2402.14020(2024).
+posemethodsfordetectingandfixingglitchtokens.GlitchProber [14] ThomasMesnardGemmaTeam,CassidyHardin,RobertDadashi,SuryaBhupati-
+raju,LaurentSifre,MorganeRivière,MihirSanjayKale,JulietteLove,PouyaTafti,
+employsasamplingstrategy,extractingfeaturesfromattention LéonardHussenot,andetal.2024.Gemma.(2024). https://doi.org/10.34740/
+patternsandMLPstatus,andachievesrapidscreeningofthevocabu- KAGGLE/M/3301
+larythroughPCAdimensionalityreductionandSVMclassification. [15] GlitchProber. (Accessed on 06/07/2024). https://sites.google.com/view/
+glitchprober/.
+ExperimentsonLLMsdemonstratethatGlitchProbersaves40%
+[16] DanHendrycks,CollinBurns,StevenBasart,AndyZou,MantasMazeika,Dawn
+ofthetimecomparedtoexistingmethodswhileachievinghigher Song,andJacobSteinhardt.2020.Measuringmassivemultitasklanguageunder-
+accuracy. Another important contribution is our strategy to fix standing.arXivpreprintarXiv:2009.03300(2020).
+[17] AlbertQ.Jiang,AlexandreSablayrolles,ArthurMensch,ChrisBamford,De-
+glitchtokensbyadjustingtheactivationvaluesofthemodel’sin- vendraSinghChaplot,DiegodelasCasas,FlorianBressand,GiannaLengyel,
+termediatelayers.ExperimentsonLLMsconfirmtheeffectiveness GuillaumeLample,LucileSaulnier,LélioRenardLavaud,Marie-AnneLachaux,
+PierreStock,TevenLeScao,ThibautLavril,ThomasWang,TimothéeLacroix,
+ofthisfixstrategy,andtheaveragerepairrateofGlitchProber
+andWilliamElSayed.2023.Mistral7B. arXiv:2310.06825[cs.CL]
+wasimprovedby13.27%comparedwiththebaselinemethod. [18] HaodongLi,GeleiDeng,YiLiu,KailongWang,YuekangLi,TianweiZhang,
+YangLiu,GuoaiXu,GuoshengXu,andHaoyuWang.2024.Digger:Detecting
+REFERENCES CopyrightContentMis-usageinLargeLanguageModelTraining.
+[19] NingkeLi,YuekangLi,YiLiu,LingShi,KailongWang,andHaoyuWang.2024.
+[1] HervéAbdiandLynneJWilliams.2010.Principalcomponentanalysis.Wiley Drowzee:MetamorphicTestingforFact-conflictingHallucinationDetectionin
+interdisciplinaryreviews:computationalstatistics2,4(2010),433–459. LargeLanguageModels.InOOPSLA(ToAppear).
+[2] JoshAchiam,StevenAdler,SandhiniAgarwal,LamaAhmad,IlgeAkkaya,Floren- [20] YuxiLi,YiLiu,GeleiDeng,YingZhang,WenjiaSong,LingShi,KailongWang,
+ciaLeoniAleman,DiogoAlmeida,JankoAltenschmidt,SamAltman,Shyamal YuekangLi,YangLiu,andHaoyuWang.2024.GlitchTokensinLargeLanguage
+Anadkat,etal.2023. Gpt-4technicalreport. arXivpreprintarXiv:2303.08774 Models:CategorizationTaxonomyandEffectiveDetection.InFSE.
+(2023). [21] YuxiLi,YiLiu,YuekangLi,LingShi,GeleiDeng,ShengquanChen,andKailong
+[3] 01.AI,:,AlexYoung,BeiChen,ChaoLi,ChengenHuang,GeZhang,Guanwei Wang.2024. LockpickingLLMs:ALogit-BasedJailbreakUsingToken-level
+Zhang,HengLi,JiangchengZhu,JianqunChen,JingChang,KaidongYu,Peng Manipulation.
+Liu,QiangLiu,ShawnYue,SenbinYang,ShimingYang,TaoYu,WenXie,Wenhao [22] HanxiaoLiu,ZihangDai,DavidR.So,andQuocV.Le.2021.PayAttentionto
+Huang,XiaohuiHu,XiaoyiRen,XinyaoNiu,PengchengNie,YuchiXu,Yudong MLPs. arXiv:2105.08050[cs.LG]
+Liu,YueWang,YuxuanCai,ZhenyuGu,ZhiyuanLiu,andZonghongDai.2024. [23] YiLiu,GeleiDeng,YuekangLi,KailongWang,TianweiZhang,YepangLiu,
+Yi:OpenFoundationModelsby01.AI. arXiv:2403.04652[cs.CL] HaoyuWang,YanZheng,andYangLiu.2023.PromptInjectionattackagainst
+[4] Anthropic.2024.TheClaude3ModelFamily:Opus,Sonnet,Haiku.Online. https: LLM-integratedApplications.arXivpreprintarXiv:2306.05499(2023).
+//www-cdn.anthropic.com/de8ba9b01c9ab7cbabf5c33b80b7bbc618857627/ [24] HaonengLuo,ShiliangZhang,MingLei,andLeiXie.2020. Simplifiedself-
+Model_Card_Claude_3.pdf (Accessed:2024-04-24). attentionfortransformer-basedend-to-endspeechrecognition.arXivpreprint
+[5] JinzeBai,ShuaiBai,YunfeiChu,ZeyuCui,KaiDang,XiaodongDeng,YangFan, arXiv:2005.10463(2020).
+WenbinGe,YuHan,FeiHuang,BinyuanHui,LuoJi,MeiLi,JunyangLin,Runji
+===== PAGE 12 =====
+Conferenceacronym’XX,June03–05,2018,Woodstock,NY ZhiboZhang,WuxiaBai,YuxiLi,MarkHuasongMeng,KailongWang,LingShi,LiLi,JunWang,andHaoyuWang
+[25] mwatkins. 2023. The petertodd phenomenon. Online. https:// [35] HugoTouvron,LouisMartin,KevinStone,PeterAlbert,AmjadAlmahairi,Yas-
+www.lesswrong.com/posts/jkY6QdCfAXHJk3kea/the-petertodd-phenomenon mineBabaei,NikolayBashlykov,SoumyaBatra,PrajjwalBhargava,ShrutiBhos-
+(Accessed:2024-05-05). ale,DanBikel,LukasBlecher,CristianCantonFerrer,MoyaChen,GuillemCucu-
+[26] mwatkins. 2023. A Search for More ChatGPT/GPT-3.5/GPT-4 "Un- rull,DavidEsiobu,JudeFernandes,JeremyFu,WenyinFu,BrianFuller,Cynthia
+speakable" Glitch Tokens. Online. https://www.lesswrong.com/ Gao,VedanujGoswami,NamanGoyal,AnthonyHartshorn,SagharHosseini,
+posts/kmWrwtGE9B9hpbgRT/a-search-for-more-chatgpt-gpt-3-5-gpt-4- RuiHou,HakanInan,MarcinKardas,ViktorKerkez,MadianKhabsa,Isabel
+unspeakable-glitch(Accessed:2024-05-03). Kloumann,ArtemKorenev,PunitSinghKoura,Marie-AnneLachaux,Thibaut
+[27] mwatkins and Jessica Rumbelow. 2023. SolidGoldMagikarp II: technical Lavril,JenyaLee,DianaLiskovich,YinghaiLu,YuningMao,XavierMartinet,
+detailsandmorerecentfindings.Online. https://www.lesswrong.com/posts/ TodorMihaylov,PushkarMishra,IgorMolybog,YixinNie,AndrewPoulton,
+Ya9LzwEbfaAMY8ABo/solidgoldmagikarp-ii-technical-details-and-more- JeremyReizenstein,RashiRungta,KalyanSaladi,AlanSchelten,RuanSilva,
+recent(Accessed:2024-05-05). EricMichaelSmith,RanjanSubramanian,XiaoqingEllenTan,BinhTang,Ross
+[28] mwatkinsandJessicaRumbelow.2023. SolidGoldMagikarpIII:Glitchtoken Taylor,AdinaWilliams,JianXiangKuan,PuxinXu,ZhengYan,IliyanZarov,
+archaeology.Online. https://www.lesswrong.com/posts/8viQEp8KBg2QSW4Yc/ YuchenZhang,AngelaFan,MelanieKambadur,SharanNarang,AurelienRo-
+solidgoldmagikarp-iii-glitch-token-archaeology(Accessed:2024-05-05). driguez,RobertStojnic,SergeyEdunov,andThomasScialom.2023. Llama2:
+[29] BloomJNandaN.2022.TransformerLens.Online.https://github.com/neelnanda- OpenFoundationandFine-TunedChatModels. arXiv:2307.09288[cs.CL]
+io/TransformerLens(Accessed:2024-05-05). [36] VladimirN.Vapnik.1995.TheNatureofStatisticalLearningTheory.Springer-
+[30] MachelReid,NikolaySavinov,DenisTeplyashin,DmitryLepikhin,Timothy Verlag.
+Lillicrap,Jean-baptisteAlayrac,RaduSoricut,AngelikiLazaridou,OrhanFirat, [37] LeonidNisonovichVaserstein.1969.Markovprocessesoverdenumerableprod-
+JulianSchrittwieser,etal.2024.Gemini1.5:Unlockingmultimodalunderstanding uctsofspaces,describinglargesystemsofautomata.ProblemyPeredachiInfor-
+acrossmillionsoftokensofcontext.arXivpreprintarXiv:2403.05530(2024). matsii5,3(1969),64–72.
+[31] JessicaRumbelowandmwatkins.2023.SolidGoldMagikarp(plus,promptgen- [38] DixuanWang,YandaLi,JunyuanJiang,ZepengDing,GuochaoJiang,Jiaqing
+eration). Online. https://www.lesswrong.com/posts/aPeJE8bSo6rAFoLqg/ Liang,andDeqingYang.2024.TokenizationMatters!DegradingLargeLanguage
+solidgoldmagikarp-plus-prompt-generation(Accessed:2024-05-05). ModelsthroughChallengingTheirTokenization.arXivpreprintarXiv:2405.17067
+[32] BernhardScholkopfandAlexanderJ.Smola.2002.LearningwithKernels:Support (2024).
+VectorMachines,Regularization,Optimization,andBeyond.MITPress. [39] GuanyuWang,YuekangLi,YiLiu,GeleiDeng,TianlinLi,GuoshengXu,Yang
+[33] GeminiTeam,RohanAnil,SebastianBorgeaud,YonghuiWu,Jean-Baptiste Liu,HaoyuWang,andKailongWang.2024. MeTMaP:MetamorphicTesting
+Alayrac,JiahuiYu,RaduSoricut,JohanSchalkwyk,AndrewMDai,AnjaHauth, forDetectingFalseVectorMatchingProblemsinLLMAugmentedGeneration.
+etal.2023.Gemini:afamilyofhighlycapablemultimodalmodels.arXivpreprint FORGE(2024).
+arXiv:2312.11805(2023). [40] QingyunWu,GaganBansal,JieyuZhang,YiranWu,ShaokunZhang,Erkang
+[34] OguzhanTopsakalandTahirCetinAkinci.2023.Creatinglargelanguagemodel Zhu,BeibinLi,LiJiang,XiaoyunZhang,andChiWang.2023.Autogen:Enabling
+applicationsutilizinglangchain:Aprimerondevelopingllmappsfast.InInterna- next-genllmapplicationsviamulti-agentconversationframework.arXivpreprint
+tionalConferenceonAppliedEngineeringandNaturalSciences,Vol.1.1050–1056. arXiv:2308.08155(2023).

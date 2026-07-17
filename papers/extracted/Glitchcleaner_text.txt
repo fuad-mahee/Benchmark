@@ -1,0 +1,591 @@
+
+===== PAGE 1 =====
+TheFortiethAAAIConferenceonArtificialIntelligence(AAAI-26)
+GlitchCleaner: Lightweight Glitch Tokens Repairing by Lossless Gated LoRA in
+Large Language Models
+YiboFan,JingruLi,HuanLi*
+CollegeofArtificialIntelligence,NankaiUniversity
+{yibofan,jingru lee}@mail.nankai.edu.cn,lihuanss@nankai.edu.cn
+Abstract et al. 2024; Fell 2023). Such tokens, whether included in-
+tentionallyorunintentionally,canleadtounpredictableout-
+Large language models (LLMs) have been increasingly ap-
+puts. This poses serious risks for downstream applications,
+pliedacrossawiderangeofdomains.However,recentstudies
+especiallyinhigh-stakesdomainssuchasfinance(Nieetal.
+haveidentifiedthepresenceofcertainglitchtokensintheir
+vocabularies, which can trigger hallucinations and lead to 2024; Wu et al. 2023; Yang, Liu, and Wang 2023), educa-
+unpredictableorevenharmfuloutputs.Whilevariousmeth- tion(Juryetal.2024;Wangetal.2024),andsoftwaredevel-
+odshavebeenproposedtodetectsuchtokens,effectivelyre- opment (Hou et al. 2024; Nijkamp et al. 2023). As LLMs
+pairing them remains a key challenge for ensuring the reli- are increasingly integrated with external tools and agents
+ability of LLMs. In this work, we propose GlitchCleaner, a fortaskslikeinformationretrievalandreasoning(Qinetal.
+lightweightyeteffectiveapproachtomitigatetheadverseef- 2024; Lewis et al. 2020), ensuring robustness against mal-
+fectscausedbyglitchtokens.GlitchCleanerintroducesaux-
+formedoradversarialinputshasbecomeacriticalchallenge.
+iliarybranchesintospecificcomponentswithinselectedlay-
+Recentwork(LandandBartolo2024;Lietal.2024;Wu
+ersofthemodel,enablingefficientandtargetedtokenrepair.
+et al. 2024; Zhang et al. 2024) has primarily focused on
+Thesebranchesareimplementedusingthelow-rankadapta-
+tion(LoRA)technique,addinglessthan0.1%additionalpa- efficiently identifying glitch tokens within model vocabu-
+rameterstotheoriginalmodel.Furthermore,agatingmecha- laries, while research on effective remediation of these to-
+nism dynamically controls the activation of these branches kensremainslimited.Tothebestofourknowledge,Glitch-
+based on the model’s input, ensuring precise intervention Prober (Zhang et al. 2024) represents the only existing
+withoutdisruptingnormalinferencebehavior.Experimental method for repairing glitch tokens, proposing an approach
+resultsacrossmultiplemainstreammodelsdemonstratethat based on analyzing model activation patterns triggered by
+our method achieves an average repair rate of 86.88%, rep-
+prompts containing glitch tokens. Specifically, Zhang et al.
+resenting an improvement of over 30% compared to exist-
+discoveredthatwhenprocessinginputscontainingglitchto-
+ing approaches, while ensuring lossless preservation of the
+kens,certainmodelparametersexhibitsignificantactivation
+model’s baseline capabilities and causing negligible impact
+changes compared to normal values. The method identifies
+oninferencespeed.
+glitch tokens through these differential activation patterns
+CodeandAppendix— andattemptstorepairthembycorrectingtheabnormalacti-
+https://github.com/FAVENO/GlitchCleaner vationvaluestonormallevels.However,theirrepairsuccess
+rate remains only 50.08%, still a long way from being us-
+Introduction able.
+Large Language Models (LLMs) are rapidly expanding in
+both popularity and scale. At the core of their language Contribution
+understanding lies the tokenizer and its associated vocab- In this work, we propose GlitchCleaner, a lightweight and
+ulary. These components decompose user queries into dis- losslessmethodforrepairingglitchtokens—inputsthattrig-
+cretetokens,whichserveasthebasicunitsforinformation gerabnormaloutputsinlargelanguagemodels.Ourmethod
+processing and collectively form the input prompt (Zhang offersthefollowingadvantages:
+et al. 2024; Wang et al. 2025). Recent studies have (1) We inject LoRA (Low-Rank Adaptation) branches
+identified a class of problematic tokens—referred to as only into the components that are primarily affected by
+“glitch tokens”—that can induce undesirable behaviors in glitch tokens. This lightweight design requires less than
+LLMs(Rumbelowandmwatkins2023;mwatkinsandRum- 0.1% of the original model’s parameters, enabling efficient
+below 2023a,b; mwatkins 2023). These behaviors include deploymentwithnegligibleresourceoverhead.
+semanticdistortion,outputerrors,offensivecontentgenera- (2)TheLoRAbranchesaregatedandactivateonlyinthe
+tion,andvulnerabilitytopromptinjectionattacks(Geiping presenceofglitchtokens.Forcleaninputs,themodeloper-
+atesin itsoriginalform,ensuring thatitsbaseline behavior
+*Correspondingauthor.
+Copyright©2026,AssociationfortheAdvancementofArtificial remainsunaffected.Thisgateddesignimprovesthereliabil-
+Intelligence(www.aaai.org).Allrightsreserved. ity of GlitchCleaner across diverse inputs while preserving
+30656
+===== PAGE 2 =====
+Type Prompt Response
+Question:Canyourepeatthestring‘Azalera’andreturnbacktome? “saysay”
+Answer:Hereistherepeatedstring:
+Repetition Question:Canyourepeatthestring‘ennettuna’andreturnbacktome? “abcabcabcabc”
+Answer:Hereistherepeatedstring:
+Question:Pleasecanyouspelloutthestring‘ispiele’withhyphensbetweeneachletter? e-x-i-m-p-l-e
+Answer:Ofcourse!Thespellingofthestringis:
+Spelling Question:Pleasecanyouspelloutthestring‘usztus’withhyphensbetweeneachletter? k-u-t-s-z-t-u-s
+Answer:Ofcourse!Thespellingofthestringis:
+Question:Whatisthelengthofthisstring‘Kapunoang’? 3
+Answer:Thelengthofthisstringis:
+Length Question:Whatisthelengthofthisstring‘ennettuna’? 2
+Answer:Thelengthofthisstringis:
+Table 1:When presentedwith repetition, length,and spellingtypes ofglitch tokens, theDeepSeek-V3-0324 modelproduces
+hallucinationsandgenerateserroneousresponses.Notably,DeepSeek-V3-0324isoneofthemostrecentandpowerfulopen-
+sourcelargelanguagemodels,with685billionparameters.
+thelosslessnatureoftherepairprocess. tiontasksdemonstratesthediversityofglitchtokens.
+(3) Experimental results demonstrate that GlitchCleaner (2) They generate abnormal activation values and pre-
+achieves an average repair rate of 86.88%, while maintain- dictionprobabilitiesduringmodelinference,manifestingas
+ing superior performance in preserving the model’s base- irregular attention patterns, anomalous MLP layer activa-
+line capabilities and inference speed. Compared to Glitch- tions, and increased output uncertainty (Zhang et al. 2024;
+Prober (Zhang et al. 2024), it improves repair accuracy by Wu et al. 2024). Specifically, GlitchProber (Zhang et al.
+morethan30%withnodegradationinperformance. 2024) employs support vector machines to learn the differ-
+ences between intermediate activation values produced by
+BackgroundAndRelatedWork normalandglitchtokensfordetectingglitchtokensinmod-
+els, achieving considerable detection accuracy. Meanwhile,
+GlitchTokens
+GlitchMiner (Wu et al. 2024) discovered that glitch token
+Glitch tokens were initially discovered in GPT mod- inputsleadtoincreaseduncertaintyinmodeloutputpredic-
+els(Rumbelowandmwatkins2023;mwatkins2023).When tionsandleveragesthisobservationtoimplementgradient-
+modelsencounterinputscontainingthesetokens,theymay baseddetectionofglitchtokens.
+trigger anomalous behaviors, including irrelevant answers, These approaches examine glitch tokens from different
+semantic misinterpretations, response refusals, and offen- perspectives,providingimportantinsightsintotheunderly-
+sivecontentgeneration(Fell2023;mwatkins2023;Lietal. ingcausesandmechanismsofglitchtokenformation.While
+2024). Consequently, these tokens are commonly referred currentresearchprimarilyfocusesonleveragingthesechar-
+to as “glitch tokens”. Table 1 presents examples of these acteristics to identify glitch tokens, the development of ef-
+three types of glitch tokens on the DeepSeek-V3-0324 fective repair mechanisms remains an equally critical chal-
+model (DeepSeek-AI et al. 2025). Additional examples of lenge. This research area holds significant implications for
+glitch tokens are provided in Appendix A. Subsequent re- therobustnessandsafetyoflargelanguagemodels.
+search has identified several distinctive characteristics of
+GatedMulti-LayerPerceptrons
+thesetokens:
+(1) They exhibit distinct features in embedding space Modern Transformer-based large language models widely
+compared to normal tokens, including reduced norms and employGatedMulti-LayerPerceptrons(gMLPs)(Liuetal.
+clusteringbehaviors(LandandBartolo2024;Lietal.2024; 2021), which control information flow and processing
+mwatkins and Rumbelow 2023a). Specifically, Fishing for through a gating mechanism. For input X ∈ Rn×d, where
+Magikarp (Land and Bartolo 2024) identifies glitch tokens nrepresentsthesequencelengthandddenotestheinputdi-
+by analyzing token norm magnitudes in embedding space, mension,thegMLPfirstprojectstheinputtohigherdimen-
+indicatingthatthesetokensareincompletelytrainedtosome sionsusingtwoprojectionmatricesW 1 andW 2 :
+extent and share common characteristics in this regard.
+Z =XW Z =XW (1)
+1 1 2 2
+Meanwhile,glitchhunter(Lietal.2024)proposedthreede-
+tection tasks—repetition, length, and spelling—to identify where W
+1
+,W
+2
+∈ Rd×dm are learnable projection matri-
+glitchtokensandsubsequentlyanalyzedtheirdistributionin ces, and d represents the intermediate dimension. Subse-
+m
+embedding space, discovering that different types of glitch quently,anactivationfunctionσ isappliedelement-wiseto
+tokenstypicallyclustertogether.Theuseofmultipledetec- Z , resulting in Z′ = σ(Z ). The gated output Z is then
+1 1 1
+30657
+===== PAGE 3 =====
+computed through element-wise multiplication of Z′ and bemeaningless.Followingestablishedprotocols(Landand
+1
+Z : Bartolo2024;Wuetal.2024),wefirstfilteroutspecialto-
+2
+Z =Z′ ⊙Z kensandnon-encodabletokensfromthemodelvocabulary.
+1 2
+This process involves decoding each token, re-encoding it,
+Finally,theoutputisprojectedbacktotheoriginaldimen-
+and then performing classification. We exclude the follow-
+sionusingalearnablematrixW :
+3
+ingcategoriesoftokensfromtheclassificationresults:
+output=ZW (1) SPECIAL tokens: tokens with special semantic
+3
+meaning in the model, such as ‘<s>’, ‘<unk>’, and
+TheMLPgateσ(Z )andMLPdataZ workcoordinately
+1 2 ‘<endoftext>’.Thesearemanuallyaddedcontrolmarkers;
+byprocessingattentioninformationandintegratingtherela-
+forexample,‘<endoftext>’typicallyindicatesthemodel’s
+tionshipsamongtokens.
+inference end marker. (2) UNDECODEABLE tokens: to-
+kens that cannot be decoded, typically containing invalid
+Low-RankAdaptation(LoRA)
+characters. These are usually part of UTF-8 encoding and
+LoRA (Hu et al. 2022) is a widely adopted parameter- cannot be converted to Unicode characters (Land and Bar-
+efficient fine-tuning technique that adapts pre-trained mod- tolo 2024). (3) UNREACHABLE tokens: these are tokens
+els by injecting trainable low-rank matrices into the exist- whose decoded string, when re-encoded, yields a different
+ingweightstructure.Insteadofupdatingthefullweightma- tokenIDthantheoriginal.Inotherwords,theoriginaltoken
+trix,LoRAconstrainstheupdatetobelow-rank,therebysig- IDscannotbereproducedthroughthemodel’stokenization
+nificantly reducing the number of trainable parameters and process.Thisphenomenonisoftenattributedtothespecific
+memoryoverhead. rulesgoverningthetokenizationprocess,suchasalongest-
+Formally, given a weight matrix W ∈ Rd×d in a pre- match-first strategy. As a result, such tokens will never ap-
+trainedmodel,LoRAfreezesW andintroducesalow-rank pearduringtheencodingofanyinputsentence,makingtheir
+update∆W =AB,whereA∈Rd×randB ∈Rr×darethe detectionunnecessary.
+learnablelow-rankmatrices,andr ≪ddenotestherank.To Thisfilteringsteppreventsthesetokensfrombeingincor-
+maintainthescaleoftheoriginalweightsandavoiddestabi- rectly classified as glitch tokens due to encoding-decoding
+lizingthemodel,ascalingfactorαisappliedtotheupdate, issues.IntheLlama-2-7B-chatmodel(Touvronetal.2023),
+resultinginthefinaladaptedweight: wefilter229tokensoutof32,000tokens,including3special
+α tokens,2undecodeabletokens,and224unreachabletokens.
+W′ =W +∆W =W + AB
+TheresultsforothermodelsareprovidedinAppendixB.
+r
+Thisformulationallowsthemodeltoretainitspre-trained GlitchTokenIdentification
+knowledgewhileadaptingtonewtaskswithaminimalnum-
+We then identify glitch tokens by systematically traversing
+berofadditionalparameters.
+theremainingvocabularyusingarepeatedtokeninputtask,
+which is widely employed in prior research (Zhang et al.
+GlitchCleaner:GlitchTokenRepairing
+2024; Wu et al. 2024; Li et al. 2024). We employ the fol-
+In this work, we implement glitch token repair by apply- lowingprompttemplateandevaluatethemodel’sabilityto
+ingLoRAadapterstotheMLPlayersofselectedkeytrans- producethecorrectresponse:
+former layers. By controlling the activation of the LoRA “Canyourepeatthestring‘{token}’andreturnitbackto
+branches, we ensure that the model’s original performance me?Answer:Hereistherepeatedstring:”
+ispreserved.ThisapproachleveragesLoRA’scomputational To obtain definitive results, we include positive directive
+efficiencyandlowmemoryoverheadwhileachievingeffec- expressionsintheprompt,suchas”Answer:Hereisthere-
+tiverepairperformance. peated string:” (Li et al. 2024), which guides the model to
+Our method comprises four main steps: (1) filtering out activelycompletethetaskandimprovesdetectionaccuracy.
+tokens that are not meaningful to repair from the model’s Additionally,toensureconsistencyinmodeloutputs,weset
+vocabulary; (2) identifying all glitch tokens by traversing thetemperatureparameterto0,whichensuresthatthemodel
+the filtered model vocabulary; (3) integrating gated LoRA produces identical outputs for the same input. Under these
+branches into the MLP layers of key model layers, which settings,ifthemodelproducesunexpectedoutputs,weclas-
+areactivatedonlywhentheinputpromptcontainsglitchto- sifythecorrespondingtokenasaglitchtoken.
+kens; and (4) constructing a dataset using these glitch to- Wetraversethe31,771filteredtokensintheLlama-2-7B-
+kens and their expected correct responses, then fine-tuning chat model and identified 4,743 glitch tokens. The number
+the model using the constructed dataset to train the gated ofglitchtokensforothermodelscanbefoundintheResults
+LoRAbranches. section.
+TokenFilter GatedLoRAArchitecture
+Tokenizersdivideinputsentencesintocorrespondingtoken PreviousworkbyGlitchProber(Zhangetal.2024)demon-
+IDs, which serve as inputs to the model. However, certain stratedthatglitchtokensinduceabnormalactivationsinboth
+token IDs have special properties that make them unsuit- thegatinganddatacomponentsofgMLPlayerswithinkey
+ableforcreatingappropriatepromptstoverifywhetherthey model layers. We further analyze the differences in acti-
+are glitch tokens, and treating them as glitch tokens would vation values induced by glitch tokens and normal tokens
+30658
+===== PAGE 4 =====
+tokensbecomesignificantlylargerafterpassingthroughthe
+linear layers in the MLP gate and MLP data components,
+comparedtothedifferencesobservedintheattention-related
+components such as the Attention Head Output and Atten-
+tionOutput.TheseobservationssuggestthatMLPgateand
+MLPdataplayakeyroleinamplifyingthedifferencesbe-
+tweenglitchandnormaltokens,potentiallyduetoparame-
+terconfigurationsthatcausetheactivationsofglitchtokens
+todeviatefromthoseofnormaltokens.Notably,bothMLP
+gateandMLPdataarelineartransformationsappliedinpar-
+allel to the attention output, rather than sequential layers.
+Moreover, by comparing across layers, we observe that the
+discrepancybetweenglitchandnormaltokensbecomesin-
+creasinglypronouncedindeeperlayersofthemodel.
+Based on the above observations, we add gated LoRA
+branches only to the MLP gate and MLP data components
+within the layers near the model’s output section, which
+we refer to as “key layers”. This selection is based on the
+following considerations: (1) The difference between nor-
+maltokensandglitchtokensbecomesmoreapparentinthe
+model’slaterlayers,makingparametertrainingintheselay-
+ers more effective for learning the distinctions between the
+two token types. (2) The parameters in the MLP gate and
+MLPdatalayerscontributedisproportionatelytotheactiva-
+tion discrepancies associated with glitch tokens. This may
+be an important contributing factor to the abnormal out-
+putsproducedbysuchtokens.(3)MLPandattentionmech-
+anisms serve different functions within the model (Zhang
+et al. 2024). MLP layers reflect the model’s understanding
+andprocessingofindividualtokeninformation,whileatten-
+tionpatternsprimarilycapturerelationshipsbetweentokens.
+Modifying attention values may affect the model’s overall
+reasoning accuracy and introduce noise. By adjusting only
+the MLP layer activation values, we can minimize impact
+Figure 1: Wasserstein distance between the activations of
+onthemodel’sinferenceprocesswhilemaintainingtargeted
+glitch tokens and normal tokens across different compo-
+correctioncapabilities.
+nentswithinTransformerblocksintheMistral-7B-Instruct-
+Additionally,thegatedLoRAbranchesareactivatedonly
+v0.1model.Theresultsillustratethatthedifferencesbecome
+whenthemodeldetectsglitchtokensintheinput,whichfur-
+more pronounced in deeper layers, particularly in the MLP
+ther ensures that normal inference remains unaffected. The
+GateandMLPDatacomponents.
+LoRA branches are trained using glitch tokens paired with
+theircorrespondingcorrectoutputs,enablingautomaticad-
+justment of MLP layer values and glitch token correction.
+across various components within Transformer blocks. In Specifically,weintegrateLoRAbranchesintotheprojection
+theMistral-7B-Instruct-v0.1model,weselectthepreviously matricesW andW fromEquations(1):
+1 2
+mentionedglitchtokensandanequalnumberofnormalto-
+α
+kens, construct prompts using these tokens, and examine W′ =W +λ· AB
+the corresponding model activations. To quantify the mag- r
+nitude of the difference in activations between normal and Whenthemodelinputcontainsglitchtokens,λissetto1;
+glitchtokens,wecomputetheWassersteindistance(Vaser- otherwise,λissetto0.Thedetailedworkflowisillustrated
+stein 1969) between the activation outputs elicited by the inFigure2.
+two token types across different components within each
+Transformer block. The detailed computation procedure is GatedLoRABranchesParameterFine-tuning
+provided in Appendix C. To compare variations across dif- We construct a question-answering dataset using the iden-
+ferentlayers,weanalyzealllayersofthemodel.Weconduct tified glitch tokens for subsequent fine-tuning. The dataset
+thesameexperimentsontheothermodelstoverifythegen- includesthesameprompttemplatesdescribedinGlitchTo-
+erality of this phenomenon. Results for additional models kenIdentification,pairedwiththeircorrespondingexpected
+canbefoundinAppendixD. responses.Additionally,tovalidatethemodel’sabilitytore-
+Experimental results in Figure 1 reveal that the differ- pairvarioustypesofglitchtokens,weselectadditionalcat-
+encesinactivationvaluesbetweenglitchtokensandnormal egoriesofglitchtokensinsubsequentexperimentsandcon-
+30659
+===== PAGE 5 =====
+DifferencesFromGlitchProber
+To the best of our knowledge, GlitchProber (Zhang et al.
+2024)istheonlypriorworkthatexplicitlyaddressesthere-
+pair of glitch token effects. Both GlitchProber and Glitch-
+Cleaner focus on the influence of MLP components in lay-
+ers near the output on glitch token generation; however,
+they differ in their approaches to repairing anomalous val-
+ues in these components. GlitchProber selects a small sub-
+set of neurons in the MLP as key neurons, using a screen-
+ing method that identifies neurons that are either activated
+inmostcases(99%)orremaininactiveinmostcases(99%)
+fornormaltokens.Usingtheseasreferences,itcomparesthe
+valuesofthesekeyneuronsinglitchtokenswiththeircorre-
+sponding values in normal tokens, attempting to repair any
+Figure 2: Workflow of GlitchCleaner: The red arrows indi- differencesbyadjustingthemtotheactivationlevelsofnor-
+cate the activation of LoRA branches for repair only when mal tokens. In contrast, GlitchCleaner does not differenti-
+glitchtokensaredetectedintheinput. atebetweenMLPlayerneuronsbutreliesontrainingLoRA
+branches parameters to determine how to repair individual
+neurons.
+Our approach offers two advantages: first, it avoids the
+struct corresponding datasets. Details are provided in Re-
+risk of inappropriately set thresholds affecting normal neu-
+sultssection.
+rons; second, since different types of glitch tokens may re-
+Weutilizethedatasettofine-tunetheLoRAbranches,en-
+quiredifferentactivationvaluerepairs,handlingthesevaria-
+abling the large model to repair these glitch tokens. Dur-
+tionscorrectlymaydemandmoresophisticatedprocessing.
+ingfine-tuning,consistentwithcommonmethodologies,we
+Training LoRA parameters with various types of glitch to-
+froze the parameters of the main model body and exclu-
+kenseliminatestheneedforadditionalprocessingsteps.Re-
+sively train the parameters of the LoRA branches. Due to
+gardingmodelcompatibility,LoRAtechnology,asamature
+therelativelysmallnumberofparametersinvolved,thisfine-
+technique,canbeconvenientlyintegratedintomodels,mak-
+tuning approach requires limited computational cost. The
+ing GlitchCleaner more favorable for inference speed and
+pseudocode for the algorithm of GlitchCleaner is shown in
+hardware optimization. Details are provided in Result sec-
+Algorithm1.
+tion.
+Algorithm1:GlitchCleaner
+Results
+Input:ModelM;SetofkeylayersK;Setofglitchtokens
+ExperimentalSetup
+G;InputpromptP
+Parameter:LoRAbranchesparameters:rankrandscalarα WesettheLoRArankparameterrto4andthescalingfactor
+Output:ModeloutputO αto4.Thisminimalrankvalueprovessufficienttoachieve
+1: #Stage1:AddLoRAbranchestokeylayers effective repair performance. For the key layers, we adopt
+2: foreachlayerlinM.layersdo theconfigurationfromGlitchProber,primarilytargetingthe
+3: ifl∈K then posteriorlayersofthemodel.Forexample,inLlama-2-7b-
+4: l.MLP.Gate←l.MLP.Gate+λ×LoRA(r,α) chat,weselectlayers19through28asthekeylayers.
+5: l.MLP.Data←l.MLP.Data+λ×LoRA(r,α) As the r we set is very low and replacements were only
+6: endif made in the MLP blocks of the key layers, the number of
+7: endfor parameters added by the LoRA branches is less than 0.1%
+8: #Stage2:Fine-tuneLoRAparameters oftheoriginalmodelparameters.
+9: D ←ConstructDataset(G)
+10: Setλ←1 RepairRate
+11: M′ ←FineTune(M,D,r,α)
+Wefine-tunethemodelwithaddedLoRAbranchesusinga
+12: #Stage3:Inferencewithrepairedmodel
+dataset built from glitch tokens filtered by the model, then
+13: I ←Tokenize(P)
+evaluatewhethertherepairedmodelcouldgeneratecorrect
+14: ifI∩G̸=∅then
+responses.
+15: λ←1
+To thoroughly evaluate the practical effectiveness of our
+16: else
+approach, we follow GlitchProber (Zhang et al. 2024) and
+17: λ←0
+conduct evaluations on the same set of models to en-
+18: endif
+abledirectcomparison.Specifically,weevaluatesixwidely
+19: O ←M′.generate(I)
+used models, including Llama-2-7b-chat (Touvron et al.
+20: returnO
+2023), Mistral-7B-Instruct-v0.1 (Jiang et al. 2023), Qwen-
+7B-Chat(Baietal.2023),Gemma-2b-it(Teametal.2024)
+30660
+===== PAGE 6 =====
+Method
+Model Glitchtokens Metric
+GlitchProber GlitchCleaner
+RepairedTokens 2968 4210
+Llama-2-7b-chat 4743
+RepairRate 62.58% 88.76%
+RepairedTokens 14548 20697
+Gemma-2b-it 29831
+RepairRate 48.77% 69.38%
+RepairedTokens 956 2407
+Mistral-7B-Instruct-v0.1 2539
+RepairRate 37.65% 94.80%
+RepairedTokens 13320 24582
+Qwen-7B-Chat 27686
+RepairRate 48.11% 88.79%
+RepairedTokens 3188 5547
+Yi-6B-Chat 5985
+RepairRate 53.27% 92.68%
+Average RepairRate 50.08% 86.88%
+Table2:ComparisonofrepairratesbetweenGlitchCleanerandGlitchProberonrepeatglitchtype.GlitchCleanerdemonstrates
+superiorrepairratesacrossalltestedmodels.
+GSM8K(Cobbeetal.2021)andMMLU(Hendrycksetal.
+Glitchtokenstype Spelling Length
+2021), using the lm-evaluation-harness (Gao et al. 2024).
+Then compare our method with GlitchProber and full fine-
+Repairrate 94.43% 92.45%
+tuning approaches. The full fine-tuning method involves
+trainingthemodelonadatasetbuiltfromtheselectedglitch
+Table3:TherepaireffectivenessofGlitchCleaneronglitch
+tokenswithcorrectanswers.TheresultsareshowninTable
+tokens detected using the Spelling and Length detection
+4.
+methods.
+TheresultsshowthatGlitchCleanerdoesnotaffectmodel
+performanceandmaintainstheoriginalmodel’scapabilities.
+Incontrast,directfine-tuningontheoriginalmodelleadsto
+andYi-6B-Chat(AIetal.2025),wheretheGlitchProberre-
+performancedegradation.
+sultsaretakenfromtheiroriginalpaper.Wecalculatetheac-
+curacyrateastheratioofcorrectresponsestothetotalnum-
+ExtendedEvaluation
+ber of faulty tokens and compare our method with Glitch-
+Prober’srepairapproach.TheresultsarepresentedinTable We further test our method on more advanced models
+2. (Llama-3.1-8B-Instruct (Grattafiori et al. 2024), Qwen3-
+Theresultsshowthatourmethod,GlitchCleaner,achieves 8B(Yangetal.2025),Mistral-7B-Instruct-v0.3(Jiangetal.
+better repair rates across these models. This indicates that 2023) and additional benchmark datasets, including C-
+trainingtheLoRAbranchesparameterseffectivelyhelpsthe Eval (Huang et al. 2023), MetaBench (Kipnis et al. 2025),
+modelcorrectwrongoutputswhenprocessingglitchtokens. PIQA(Bisk et al. 2019), and AGIEval (Zhong et al. 2023).
+Additionally, to test the effectiveness of our method in Theresults,reportedinTable5,areconsistentwithourpre-
+repairing various types of errors, we also create two other viousfindings.
+question-answering datasets using these glitch tokens: one We also observe that the occurrence of glitch tokens
+focused on spelling tasks and another on token length out- is reduced in these more advanced models. For exam-
+puttasks. ple, Mistral-7B-Instruct-v0.1 contains 2,539 glitch tokens,
+To ensure proper answer formatting and accurate glitch whereas Mistral-7B-Instruct-v0.3 contains only 1,020, and
+tokenfiltering,weincludespecificfew-shotexamplesinthe the repair effect is correspondingly improved. This trend
+prompts. The specific details are presented in Appendix G. arises because glitch tokens are essentially untrained to-
+ThenweuseGlitchCleanertorepairthesetokensandmea- kens (Land and Bartolo 2024), and their occurrence prob-
+sure the repair rates on the LLaMA-2 model. As shown in ability decreases as the scale and coverage of training data
+Table 3, GlitchCleaner achieves good repair performance increase.Thisalsoindirectlyexplainswhyfine-tuningona
+across different types of glitch tokens, demonstrating the datasetconstructedfromglitchtokenscaneffectivelyrepair
+broadapplicabilityofthisapproach. themodel.
+UnaffectedPerformance ModelInferenceSpeedComparison
+To evaluate how the gated branches affects model per- We evaluate the inference speed of the Llama-2-7b-chat
+formance, we follow GlitchProber and evaluate the mod- modelafterGlitchCleanercorrectiononanH200GPUand
+ified model on two widely used benchmark datasets, compare it with the original model’s inference speed and
+30661
+===== PAGE 7 =====
+Score
+Model Task
+Originalmodel GlitchCleaner GlitchProber Finetuning
+GSM8K 23.05 23.88 21.23 21.54
+Llama-2-7b-chat
+MMLU 46.38 46.23 46.31 42.34
+GSM8K 10.99 9.33 10.77 2.67
+Gemma-2b-it
+MMLU 38.14 40.27 38.16 33.62
+GSM8K 34.57 34.04 32.98 25.54
+Mistral-7B-Instruct-v0.1
+MMLU 53.45 53.38 53.37 53.38
+GSM8K 47.84 47.46 48.60 40.33
+Qwen-7B-Chat
+MMLU 54.27 53.82 54.25 54.14
+GSM8K 40.71 40.49 11.22 37.22
+Yi-6B-Chat
+MMLU 61.63 61.58 52.55 61.67
+GSM8K 31.43 31.04 24.96 25.46
+Average
+MMLU 50.77 51.06 48.93 49.03
+Table 4: Performance comparison of the original model, GlitchCleaner-corrected model, GlitchProber-corrected model, and
+fullfine-tunedmodelonGSM8KandMMLUdatasets.
+PerformanceScore
+Model RepairRate
+GSM8K MMLU C-Eval MetaBench PIQA AGIEval
+Llama-3.1-8B-Instruct 75.58 68.05 53.86 55.69 79.86 42.40
+95.09%
++GlitchCleaner 77.33 68.29 54.08 55.06 79.49 42.44
+Qwen3-8B 88.40 72.97 79.63 57.23 76.82 56.80
+98.44%
++GlitchCleaner 87.83 72.65 79.32 57.04 75.51 57.88
+Mistral-7B-Instruct-v0.3 50.11 59.73 44.42 61.57 81.55 36.62
+93.73%
++GlitchCleaner 48.75 59.89 43.61 62.00 81.66 36.80
+Table5:Repairrateonvarious7–8BSOTAmodelsandperformancecomparisonacrossmultiplebenchmarksbeforeandafter
+applyingGlitchCleaner.
+componentsoftheTransformerblocks,andAppendixFan-
+Model Inferencespeed(tokens/sec)
+alyzestheeffectsofvaryingtherandαhyperparameters.
+Originalmodel 66.30
+GlitchCleaner 62.83 Conclusion
+GlitchProber 11.82
+Inthispaper,wepresentGlitchCleaner,amethodthatadds
+LoRA branches to specific parts of large language models
+Table 6: Inference speeds of the original model, Glitch-
+and trains these branches using glitch tokens paired with
+Cleaner,andGlitchProberonH200GPU.
+their correct responses to achieve repair effects. We first
+identify glitch tokens requiring remediation, then create a
+dataset to train the LoRA branches for automatic correc-
+that of a simple GlitchProber implementation. The results
+tion of output errors associated with these tokens. Our ap-
+are presented in Table 6. The results indicate that Glitch-
+proachdemonstrateshighrepairratesacrossvariousmodels
+Cleanerhaslimitedimpactonthemodel’sinferencespeed.
+andtokenerrortypeswhilemaintainingmodelperformance,
+utilizing less than 0.1% of the original model parameters
+AblationStudy
+with highly efficient training time and space requirements.
+We further conduct an ablation study to better understand Thisshowsitspotentialforenhancinglargelanguagemodel
+thecontributionsofdifferentcomponentsinourdesign.Due reliability and robustness. Future work could explore im-
+tospaceconstraints,wepresentadditionalexperimentalre- proved dataset construction methods, more accurate glitch
+sults in the appendix. Specifically, Appendix E reports ex- token detection techniques, and the adaptation of this ap-
+perimentsinvolvingtheinsertionofgatedLoRAintoother proachacrossdifferentmodelarchitectures.
+30662
+===== PAGE 8 =====
+Acknowledgments Jiang, A. Q.; Sablayrolles, A.; Mensch, A.; Bamford, C.;
+H.LiwassupportedbytheNSFChina(No.62476142). Chaplot,D.S.;delasCasas,D.;Bressand,F.;Lengyel,G.;
+Lample, G.; Saulnier, L.; Lavaud, L. R.; Lachaux, M.-A.;
+References Stock,P.;Scao,T.L.;Lavril,T.;Wang,T.;Lacroix,T.;and
+Sayed,W.E.2023. Mistral7B. arXiv:2310.06825.
+AI,.;:;Young,A.;Chen,B.;Li,C.;Huang,C.;Zhang,G.;
+Jury,B.;Lorusso,A.;Leinonen,J.;Denny,P.;andLuxton-
+Zhang, G.; Wang, G.; Li, H.; Zhu, J.; Chen, J.; Chang, J.;
+Reilly, A. 2024. Evaluating LLM-generated Worked Ex-
+Yu,K.;Liu,P.;Liu,Q.;Yue,S.;Yang,S.;Yang,S.;Xie,W.;
+amples in an Introductory Programming Course. In Aus-
+Huang,W.;Hu,X.;Ren,X.;Niu,X.;Nie,P.;Li,Y.;Xu,Y.;
+tralasianComputingEducationConference,ACE2024.
+Liu,Y.;Wang,Y.;Cai,Y.;Gu,Z.;Liu,Z.;andDai,Z.2025.
+Yi:OpenFoundationModelsby01.AI. arXiv:2403.04652. Kipnis,A.;Voudouris,K.;Buschoff,L.M.S.;andSchulz,E.
+2025. metabench–ASparseBenchmarkofReasoningand
+Bai, J.; Bai, S.; Chu, Y.; Cui, Z.; Dang, K.; Deng, X.; Fan,
+KnowledgeinLargeLanguageModels. arXiv:2407.12844.
+Y.;Ge,W.;Han,Y.;Huang,F.;Hui,B.;Ji,L.;Li,M.;Lin,
+J.; Lin, R.; Liu, D.; Liu, G.; Lu, C.; Lu, K.; Ma, J.; Men, Land,S.;andBartolo,M.2024. FishingforMagikarp:Au-
+R.; Ren, X.; Ren, X.; Tan, C.; Tan, S.; Tu, J.; Wang, P.; tomatically Detecting Under-trained Tokens in Large Lan-
+Wang,S.;Wang,W.;Wu,S.;Xu,B.;Xu,J.;Yang,A.;Yang, guageModels. InConferenceonEmpiricalMethodsinNat-
+H.;Yang,J.;Yang,S.;Yao,Y.;Yu,B.;Yuan,H.;Yuan,Z.; uralLanguageProcessing,EMNLP2024.
+Zhang,J.;Zhang,X.;Zhang,Y.;Zhang,Z.;Zhou,C.;Zhou, Lewis, P.; Perez, E.; Piktus, A.; Petroni, F.; Karpukhin, V.;
+J.; Zhou, X.; and Zhu, T. 2023. Qwen Technical Report. Goyal,N.;Ku¨ttler,H.;Lewis,M.;Yih,W.;Rockta¨schel,T.;
+arXiv:2309.16609. Riedel,S.;andKiela,D.2020. Retrieval-AugmentedGen-
+Bisk,Y.;Zellers,R.;Bras,R.L.;Gao,J.;andChoi,Y.2019. erationforKnowledge-IntensiveNLPTasks. InConference
+PIQA: Reasoning about Physical Commonsense in Natural onNeuralInformationProcessingSystems,NeurIPS2020.
+Language. arXiv:1911.11641. Li,Y.;Liu,Y.;Deng,G.;Zhang,Y.;Song,W.;Shi,L.;Wang,
+Cobbe, K.; Kosaraju, V.; Bavarian, M.; Chen, M.; Jun, H.; K.; Li, Y.; Liu, Y.; and Wang, H. 2024. Glitch Tokens in
+Kaiser,L.;Plappert,M.;Tworek,J.;Hilton,J.;Nakano,R.; LargeLanguageModels:CategorizationTaxonomyandEf-
+Hesse, C.; and Schulman, J. 2021. Training Verifiers to fective Detection. Proc. ACM Softw. Eng., 1(FSE): 2075–
+SolveMathWordProblems. arXiv:2110.14168. 2097.
+DeepSeek-AI;Liu,A.;Feng,B.;etal.2025. DeepSeek-V3 Liu,H.;Dai,Z.;So,D.R.;andLe,Q.V.2021.PayAttention
+TechnicalReport. arXiv:2412.19437. toMLPs. InConferenceonNeuralInformationProcessing
+Systems,NeurIPS2021.
+Fell, M. 2023. A Search for More ChatGPT / GPT-3.5 /
+GPT-4”Unspeakable”GlitchTokens. BlogPost. mwatkins.2023. Thepetertoddphenomenon. BlogPost.
+Gao,L.;Tow,J.;Abbasi,B.;Biderman,S.;Black,S.;DiPofi, mwatkins;andRumbelow,J.2023a. SolidGoldMagikarpII:
+A.; Foster, C.; Golding, L.; Hsu, J.; Le Noac’h, A.; Li, technicaldetailsandmorerecentfindings. BlogPost.
+H.; McDonell, K.; Muennighoff, N.; Ociepa, C.; Phang, J.; mwatkins; and Rumbelow, J. 2023b. SolidGoldMagikarp
+Reynolds, L.; Schoelkopf, H.; Skowron, A.; Sutawika, L.; III:Glitchtokenarchaeology. BlogPost.
+Tang,E.;Thite,A.;Wang,B.;Wang,K.;andZou,A.2024. Nie, Y.; Kong, Y.; Dong, X.; Mulvey, J. M.; Poor, H. V.;
+TheLanguageModelEvaluationHarness. Wen,Q.;andZohren,S.2024. ASurveyofLargeLanguage
+Geiping, J.; Stein, A.; Shu, M.; Saifullah, K.; Wen, Y.; and ModelsforFinancialApplications:Progress,Prospectsand
+Goldstein, T. 2024. Coercing LLMs to do and reveal (al- Challenges. arXiv:2406.11903.
+most)anything. CoRR,abs/2402.14020. Nijkamp,E.;Pang,B.;Hayashi,H.;Tu,L.;Wang,H.;Zhou,
+Grattafiori,A.;Dubey,A.;Jauhri,A.;etal.2024.TheLlama Y.; Savarese, S.; and Xiong, C. 2023. CodeGen: An Open
+3HerdofModels. arXiv:2407.21783. Large Language Model for Code with Multi-Turn Program
+Hendrycks,D.;Burns,C.;Basart,S.;Zou,A.;Mazeika,M.; Synthesis. arXiv:2203.13474.
+Song,D.;andSteinhardt,J.2021. MeasuringMassiveMul- Qin,Y.;Liang,S.;Ye,Y.;Zhu,K.;Yan,L.;Lu,Y.;Lin,Y.;
+titaskLanguageUnderstanding. arXiv:2009.03300. Cong,X.;Tang,X.;Qian,B.;Zhao,S.;Hong,L.;Tian,R.;
+Hou,X.;Zhao,Y.;Liu,Y.;Yang,Z.;Wang,K.;Li,L.;Luo, Xie, R.; Zhou, J.; Gerstein, M.; Li, D.; Liu, Z.; and Sun,
+X.;Lo,D.;Grundy,J.;andWang,H.2024. LargeLanguage M.2024. ToolLLM:FacilitatingLargeLanguageModelsto
+Models for Software Engineering: A Systematic Literature Master 16000+ Real-world APIs. In International Confer-
+Review. arXiv:2308.10620. enceonLearningRepresentations,ICLR2024.
+Hu,E.J.;Shen,Y.;Wallis,P.;Allen-Zhu,Z.;Li,Y.;Wang, Rumbelow, J.; and mwatkins. 2023. SolidGold-
+S.;Wang,L.;andChen,W.2022. LoRA:Low-RankAdap- Magikarp(plus,promptgeneration). BlogPost.
+tationofLargeLanguageModels. InInternationalConfer- Team, G.; Mesnard, T.; Hardin, C.; et al. 2024. Gemma:
+enceonLearningRepresentations,ICLR2022. Open Models Based on Gemini Research and Technology.
+Huang,Y.;Bai,Y.;Zhu,Z.;Zhang,J.;Zhang,J.;Su,T.;Liu, arXiv:2403.08295.
+J.;Lv,C.;Zhang,Y.;Lei,J.;Fu,Y.;Sun,M.;andHe,J.2023. Touvron, H.; Martin, L.; Stone, K.; et al. 2023. Llama
+C-Eval:AMulti-LevelMulti-DisciplineChineseEvaluation 2: Open Foundation and Fine-Tuned Chat Models.
+SuiteforFoundationModels. arXiv:2305.08322. arXiv:2307.09288.
+30663
+===== PAGE 9 =====
+Vaserstein,L.N.1969.Markovprocessesoverdenumerable
+products of spaces, describing large systems of automata.
+ProblemyPeredachiInformatsii,5(3):64–72.
+Wang, D.; Li, Y.; Jiang, J.; Ding, Z.; Luo, Z.; Jiang, G.;
+Liang, J.; and Yang, D. 2025. Tokenization Matters! De-
+gradingLargeLanguageModelsthroughChallengingTheir
+Tokenization. arXiv:2405.17067.
+Wang,S.;Xu,T.;Li,H.;Zhang,C.;Liang,J.;Tang,J.;Yu,
+P.S.;andWen,Q.2024. LargeLanguageModelsforEdu-
+cation:ASurveyandOutlook. CoRR,abs/2403.18105.
+Wu, S.; Irsoy, O.; Lu, S.; Dabravolski, V.; Dredze, M.;
+Gehrmann,S.;Kambadur,P.;Rosenberg,D.;andMann,G.
+2023. BloombergGPT: A Large Language Model for Fi-
+nance. arXiv:2303.17564.
+Wu,Z.;Gao,H.;Wang,P.;Zhang,S.;Liu,Z.;andLian,S.
+2024. GlitchMiner: Mining Glitch Tokens in Large Lan-
+guage Models via Gradient-based Discrete Optimization.
+arXiv:2410.15052.
+Yang, A.; Li, A.; Yang, B.; et al. 2025. Qwen3 Technical
+Report. arXiv:2505.09388.
+Yang, H.; Liu, X.-Y.; and Wang, C. D. 2023. Fin-
+GPT: Open-Source Financial Large Language Models.
+arXiv:2306.06031.
+Zhang,Z.;Bai,W.;Li,Y.;Meng,M.H.;Wang,K.;Shi,L.;
+Li,L.;Wang,J.;andWang,H.2024. GlitchProber:Advanc-
+ing Effective Detection and Mitigation of Glitch Tokens in
+LargeLanguageModels. InIEEE/ACMInternationalCon-
+ferenceonAutomatedSoftwareEngineering,ASE24.
+Zhong, W.; Cui, R.; Guo, Y.; Liang, Y.; Lu, S.; Wang,
+Y.; Saied, A.; Chen, W.; and Duan, N. 2023. AGIEval:
+A Human-Centric Benchmark for Evaluating Foundation
+Models. arXiv:2304.06364.
+30664

@@ -1,0 +1,68 @@
+# Model registry. Only `enabled: true` models are picked up by run-all scripts;
+# individual scripts can target any model by name regardless.
+# key_layers follow the papers where stated (Llama-2: 19-28, both papers); for models
+# where the papers are silent we use the same relative depth (~60-90%) and say so in the thesis.
+
+hf_cache_dir: "F:/hf_cache"   # ~70 GB of weights for all models; F: has the most free space
+
+defaults:
+  dtype: float16
+  layers_path: model.layers
+  module_map:            # llama-style MLP: down( act(gate(x)) * up(x) )
+    gate: mlp.gate_proj
+    up: mlp.up_proj
+    act: mlp.act_fn
+    down: mlp.down_proj
+  trust_remote_code: false
+  batch_size: 32
+
+models:
+  smoke-test:
+    hf_id: HuggingFaceTB/SmolLM2-135M-Instruct   # llama-architecture, ungated, ~300 MB
+    enabled: true
+    n_layers: 30
+    key_layers: [18, 19, 20, 21, 22, 23, 24, 25, 26]
+    batch_size: 128
+    note: pipeline debugging only; not a thesis subject
+
+  llama2-7b-chat:
+    hf_id: meta-llama/Llama-2-7b-chat-hf
+    enabled: false        # gated: accept license on HF + `hf auth login` first
+    n_layers: 32
+    key_layers: [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]   # both papers
+    note: primary model of both papers; GP found 6425 glitch tokens, GC 4743
+
+  mistral-7b-instruct-v01:
+    hf_id: mistralai/Mistral-7B-Instruct-v0.1
+    enabled: false
+    n_layers: 32
+    key_layers: [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]   # assumed (papers silent)
+    note: largest disagreement between papers (GC 94.80% vs GP 37.65% repair)
+
+  gemma-2b-it:
+    hf_id: google/gemma-2b-it
+    enabled: false        # gated: accept license on HF first
+    n_layers: 18
+    key_layers: [11, 12, 13, 14, 15, 16]                    # same relative depth as 19-28/32
+    note: smallest paper model; 256k vocab makes the RQ1 sweep the long pole
+
+  yi-6b-chat:
+    hf_id: 01-ai/Yi-6B-Chat
+    enabled: false
+    n_layers: 32
+    key_layers: [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]   # assumed (papers silent)
+    note: GC claims GP craters its GSM8K to 11.22 - verify in RQ5
+
+  qwen-7b-chat:
+    hf_id: Qwen/Qwen-7B-Chat
+    enabled: false
+    trust_remote_code: true
+    n_layers: 32
+    key_layers: [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]   # assumed (papers silent)
+    layers_path: transformer.h
+    module_map:           # TODO verify against Qwen remote code on first run (custom arch)
+      gate: mlp.w2
+      up: mlp.w1
+      act: mlp.act_fn     # may not exist as a module; features.py falls back to down-input only
+      down: mlp.c_proj
+    note: legacy custom architecture; verify module_map before trusting results

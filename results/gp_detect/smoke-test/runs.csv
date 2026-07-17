@@ -1,0 +1,2 @@
+seed,n_candidates,n_sampled,n_predicted_glitch_by_svm,TP,FP,FN,precision,recall,f1,time_seconds,paper_claims
+0,1368,136,1,22,0,145,1.0,0.1317365269461078,0.23280423280423285,3.733224199997494,"{'precision': 1.0, 'recall_avg': 0.6447, 'f1_avg': 0.7835}"

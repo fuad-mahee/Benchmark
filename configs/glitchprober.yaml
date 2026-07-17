@@ -1,0 +1,29 @@
+# GlitchProber reimplementation (paper Alg. 1 detection, Alg. 2 fix).
+seeds: [0, 1, 2]          # papers report no variance; we do
+
+detection:
+  gamma: 0.1              # sampling rate (paper Sec. 5.1)
+  pca_dim: 75             # paper default P
+  svm:
+    kernel: poly
+    C: 1.0
+    degree: 3
+  features: [attn_pattern, mlp_gate, mlp_data]   # paper's chosen combination
+  post_validation: true   # re-check every SVM positive with the repetition task (=> 100% precision by construction)
+
+repair:
+  m: 1.0                  # activation threshold for key-neuron selection (paper Sec. 6.1)
+  neun_up_quantile: 0.99  # active in >99% of normal tokens
+  gamma: 0.1              # normal-token sampling rate for statistics
+  # Paper Eq. 11-12: beta = k1*dAct_up + b1 ; alpha = k2*dAct_down + b2.
+  # k1,b1,k2,b2 are UNDISCLOSED ("derived through an adaptive process"). These defaults are
+  # our reimplementation choice - a documented reproducibility gap.
+  adaptive: { k1: 1.0, b1: 0.0, k2: 1.0, b2: 0.0 }
+  rule_based: { alpha: 4.0, beta: 1.5 }   # the paper's fixed-value baseline
+
+alpha_beta_sweep:          # RQ3 sensitivity: is alpha=4 / beta=1.5 special, or is the landscape flat?
+  alphas: [1.0, 2.0, 4.0, 8.0, 16.0]
+  betas: [0.25, 0.5, 1.0, 1.5, 2.0, 4.0]
+  n_glitch_sample: 500     # per grid cell
+  n_normal_sample: 500     # collateral-damage check per cell
+  m_sweep: [0.25, 0.5, 1.0, 2.0, 4.0]   # optional threshold sensitivity at fixed alpha/beta

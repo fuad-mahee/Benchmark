@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-07-17T21:55:01",
+  "git_commit": "3bb6067",
+  "model": "smoke-test",
+  "seed": 0,
+  "config": {
+    "m": 1.0,
+    "neun_up_quantile": 0.99,
+    "gamma": 0.1,
+    "adaptive": {
+      "k1": 1.0,
+      "b1": 0.0,
+      "k2": 1.0,
+      "b2": 0.0
+    },
+    "rule_based": {
+      "alpha": 4.0,
+      "beta": 1.5
+    }
+  },
+  "sample_cap": 100,
+  "results": {
+    "adaptive": {
+      "n_glitch": 100,
+      "repaired": 1,
+      "repair_rate": 0.01,
+      "n_normal_checked": 100,
+      "normal_broken": 0,
+      "normal_break_rate": 0.0
+    },
+    "rule_based": {
+      "n_glitch": 100,
+      "repaired": 28,
+      "repair_rate": 0.28,
+      "n_normal_checked": 100,
+      "normal_broken": 16,
+      "normal_break_rate": 0.16
+    }
+  },
+  "paper_claims": {
+    "adaptive_avg": 0.5006,
+    "rule_based_avg": 0.3679
+  }
+}

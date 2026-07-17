@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-07-17T21:55:50",
+  "git_commit": "3bb6067",
+  "model": "smoke-test",
+  "config": {
+    "seed": 0,
+    "lora": {
+      "r": 4,
+      "alpha": 4,
+      "dropout": 0.0,
+      "target": [
+        "gate",
+        "up"
+      ]
+    },
+    "holdout_fraction": 0.2,
+    "training": {
+      "epochs": 3,
+      "lr": 0.0002,
+      "batch_size": 8,
+      "gradient_accumulation": 2,
+      "mask_prompt_loss": true
+    },
+    "eval": {
+      "max_new_tokens": 24
+    }
+  },
+  "results": {
+    "train_repaired": 24,
+    "train_repair_rate": 0.1791044776119403,
+    "heldout_repaired": 6,
+    "heldout_repair_rate": 0.18181818181818182,
+    "normal_ok_adapter_on": 96,
+    "normal_ok_rate_adapter_on": 0.96,
+    "heldout_repaired_adapter_off": 1,
+    "heldout_repair_rate_adapter_off": 0.030303030303030304,
+    "n_train": 134,
+    "n_heldout": 33,
+    "n_normal": 100,
+    "paper_claim_repair_rate_avg": 0.8688
+  }
+}

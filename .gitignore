@@ -1,1 +1,9 @@
 .claude/settings.local.json
+.venv/
+__pycache__/
+*.pyc
+third_party/
+results/**/adapter/
+*.pt
+*.bin
+*.safetensors

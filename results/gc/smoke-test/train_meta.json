@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-07-17T21:55:27",
+  "git_commit": "3bb6067",
+  "model": "smoke-test",
+  "config": {
+    "seed": 0,
+    "lora": {
+      "r": 4,
+      "alpha": 4,
+      "dropout": 0.0,
+      "target": [
+        "gate",
+        "up"
+      ]
+    },
+    "holdout_fraction": 0.2,
+    "training": {
+      "epochs": 3,
+      "lr": 0.0002,
+      "batch_size": 8,
+      "gradient_accumulation": 2,
+      "mask_prompt_loss": true
+    },
+    "eval": {
+      "max_new_tokens": 24
+    }
+  },
+  "n_train": 134,
+  "n_heldout": 33,
+  "train_seconds": 3.9071410999968066
+}

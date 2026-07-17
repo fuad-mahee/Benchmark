@@ -1,0 +1,16 @@
+# GlitchCleaner (gated LoRA) - paper settings plus our held-out split (the circularity test).
+seed: 0
+lora:
+  r: 4                    # paper
+  alpha: 4                # paper scaling factor
+  dropout: 0.0
+  target: [gate, up]      # MLP gate + data projections of key layers only (paper)
+holdout_fraction: 0.2     # paper trains and evaluates on the SAME tokens; we hold out 20%
+training:
+  epochs: 3
+  lr: 2.0e-4
+  batch_size: 8
+  gradient_accumulation: 2
+  mask_prompt_loss: true  # loss only on the answer span
+eval:
+  max_new_tokens: 24
