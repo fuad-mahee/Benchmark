@@ -20,7 +20,7 @@ from ..ground_truth.sweep import repetition_sweep
 
 
 @torch.no_grad()
-def _collect_mlp_acts(model, tok, token_ids, mcfg, batch_size, desc):
+def _collect_mlp_acts(model, tok, token_ids, mcfg, batch_size, desc, task="repetition"):
     """Last-position down_proj INPUT per key layer -> {layer: tensor [n, d_mlp]} (cpu fp32)."""
     device = next(model.parameters()).device
     layers = decoder_layers(model, mcfg)
@@ -40,7 +40,7 @@ def _collect_mlp_acts(model, tok, token_ids, mcfg, batch_size, desc):
     try:
         for i in tqdm(range(0, len(token_ids), batch_size), desc=desc):
             chunk = token_ids[i : i + batch_size]
-            input_ids, attention_mask = spliced_batch(tok, chunk, device)
+            input_ids, attention_mask = spliced_batch(tok, chunk, device, task)
             model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)
     finally:
         for h in handles:
@@ -49,9 +49,9 @@ def _collect_mlp_acts(model, tok, token_ids, mcfg, batch_size, desc):
 
 
 def compute_neuron_stats(model, tok, normal_sample, mcfg, m: float, up_quantile: float,
-                         batch_size: int) -> dict:
+                         batch_size: int, task="repetition") -> dict:
     """Per key layer: Neun_up / Neun_down index tensors + mean normal activations."""
-    acts = _collect_mlp_acts(model, tok, normal_sample, mcfg, batch_size, "normal stats")
+    acts = _collect_mlp_acts(model, tok, normal_sample, mcfg, batch_size, "normal stats", task)
     stats = {}
     for li, A in acts.items():  # A: [n_normal, d_mlp]
         active_frac = (A > m).float().mean(dim=0)
@@ -66,9 +66,9 @@ def compute_neuron_stats(model, tok, normal_sample, mcfg, m: float, up_quantile:
 
 
 def compute_adjustments(model, tok, glitch_sample, mcfg, stats, adaptive: dict,
-                        batch_size: int) -> dict:
+                        batch_size: int, task="repetition") -> dict:
     """Paper Eq. 9-12: per key layer, beta = k1*dAct_up + b1, alpha = k2*dAct_down + b2."""
-    acts = _collect_mlp_acts(model, tok, glitch_sample, mcfg, batch_size, "glitch stats")
+    acts = _collect_mlp_acts(model, tok, glitch_sample, mcfg, batch_size, "glitch stats", task)
     adj = {}
     eps = 1e-6
     for li, A in acts.items():
@@ -129,11 +129,13 @@ class RepairHooks:
 
 
 def evaluate_repair(model, tok, glitch_ids, normal_ids, mcfg, stats, alpha_beta,
-                    batch_size, max_new_tokens) -> dict:
+                    batch_size, max_new_tokens, task="repetition", correct_fn=None) -> dict:
     """Repair rate on glitch tokens + collateral breakage on normal tokens."""
     with RepairHooks(model, mcfg, stats, alpha_beta):
-        g = repetition_sweep(model, tok, glitch_ids, batch_size, max_new_tokens, desc="repair glitch")
-        n = repetition_sweep(model, tok, normal_ids, batch_size, max_new_tokens, desc="repair normal")
+        g = repetition_sweep(model, tok, glitch_ids, batch_size, max_new_tokens,
+                             task=task, desc="repair glitch", correct_fn=correct_fn)
+        n = repetition_sweep(model, tok, normal_ids, batch_size, max_new_tokens,
+                             task=task, desc="repair normal", correct_fn=correct_fn)
     repaired = sum(1 for ok, _ in g.values() if ok)
     broken = sum(1 for ok, _ in n.values() if not ok)
     return {

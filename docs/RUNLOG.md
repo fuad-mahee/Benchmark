@@ -93,3 +93,21 @@ Confound to rule out before comparing recall to the paper: our census has a 3.1%
 glitch base rate (~98 positives in the training sample) vs ~8% under the paper's
 own protocol. Rerunning detection against the gccode census (2,552 glitch) for a
 base-rate-matched comparison - in progress.
+
+**Base-rate control (gccode census, 2,552 glitch, ~8% base rate):**
+
+| seed | precision | recall | F1 |
+|---|---|---|---|
+| 0 | 0.997 | 0.413 | 0.584 |
+| 1 | 0.996 | 0.382 | 0.553 |
+| 2 | 0.999 | 0.417 | 0.588 |
+| mean | 0.997 | 0.404 +/- 0.019 | 0.575 +/- 0.019 |
+
+**FINDING 4: the recall shortfall survives the base-rate control.** Under the
+paper's own census conditions, detection recall reproduces at ~40%, not the
+claimed 67.4% (F1 0.575 vs 0.805). The base rate explains part of the earlier
+gap (28% -> 40%) and nearly all of the seed variance (std 0.091 -> 0.019), but
+the headline claim does not reproduce from the paper's published description.
+Caveat for thesis: GlitchProber has no released code, so reimplementation-vs-
+claim divergence cannot be fully attributed (threats to validity). Finding 3
+(precision 99.7% != 100%) replicates under both protocols.

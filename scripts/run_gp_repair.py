@@ -23,6 +23,7 @@ def main():
     ap.add_argument("--sample", type=int, default=None, help="cap eval set sizes")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--batch-size", type=int, default=None)
+    ap.add_argument("--protocol", choices=["paper", "gccode"], default="paper")
     args = ap.parse_args()
 
     mcfg = get_model_cfg(args.model)
@@ -30,7 +31,17 @@ def main():
     gt_cfg = load_yaml("ground_truth.yaml")
     batch = args.batch_size or mcfg["batch_size"]
 
-    df = pd.read_csv(results_dir("ground_truth", args.model) / "tokens.csv")
+    if args.protocol == "gccode":
+        task, max_new = "repetition_gccode", 10
+
+        def correct_fn(tok, tid, text):
+            return tok.decode([tid]).lstrip() in text
+    else:
+        task, max_new, correct_fn = "repetition", gt_cfg["max_new_tokens"], None
+
+    gt_base = results_dir("ground_truth", args.model)
+    gt_path = (gt_base / "tokens.csv") if args.protocol == "paper" else (gt_base / "gccode" / "tokens.csv")
+    df = pd.read_csv(gt_path)
     glitch = df[df["category"] == "glitch"]["token_id"].tolist()
     normal = df[df["category"] == "normal"]["token_id"].tolist()
     rng = np.random.default_rng(args.seed)
@@ -46,29 +57,30 @@ def main():
     model = load_model(mcfg, attn_impl=None)
 
     stats = compute_neuron_stats(model, tok, normal_stats_sample, mcfg,
-                                 gp["m"], gp["neun_up_quantile"], batch)
+                                 gp["m"], gp["neun_up_quantile"], batch, task)
     for li, s in stats.items():
         print(f"layer {li}: |Neun_up|={len(s['neun_up'])} |Neun_down|={len(s['neun_down'])}")
 
-    out = results_dir("gp_repair", args.model)
+    out = (results_dir("gp_repair", args.model) if args.protocol == "paper"
+           else results_dir("gp_repair", args.model, "gccode"))
     results = {}
     if args.mode in ("both", "adaptive"):
         glitch_stats_sample = list(rng.choice(glitch, size=min(len(glitch), len(normal_stats_sample)), replace=False))
         adj = compute_adjustments(model, tok, glitch_stats_sample, mcfg, stats,
-                                  gp["adaptive"], batch)
+                                  gp["adaptive"], batch, task)
         print("adaptive per-layer alpha/beta:", {k: {x: round(y, 3) for x, y in v.items()} for k, v in adj.items()})
         results["adaptive"] = evaluate_repair(model, tok, glitch_eval, normal_eval, mcfg,
-                                              stats, adj, batch, gt_cfg["max_new_tokens"])
+                                              stats, adj, batch, max_new, task, correct_fn)
     if args.mode in ("both", "rule"):
         rb = gp["rule_based"]
         results["rule_based"] = evaluate_repair(model, tok, glitch_eval, normal_eval, mcfg,
-                                                stats, rb, batch, gt_cfg["max_new_tokens"])
+                                                stats, rb, batch, max_new, task, correct_fn)
 
     for k, v in results.items():
         print(f"{k}: repair_rate={v['repair_rate']:.3f} normal_break_rate={v['normal_break_rate']:.3f}")
 
     save_json(run_metadata(model=args.model, seed=args.seed, config=gp,
-                           sample_cap=args.sample, results=results,
+                           protocol=args.protocol, sample_cap=args.sample, results=results,
                            paper_claims={"adaptive_avg": 0.5006, "rule_based_avg": 0.3679}),
               out / "summary.json")
 
