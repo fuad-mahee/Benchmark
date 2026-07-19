@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-07-19T15:44:36",
+  "git_commit": "e4006f3",
+  "model": "mistral-7b-instruct-v01",
+  "hf_id": "mistralai/Mistral-7B-Instruct-v0.1",
+  "limit": null,
+  "protocol": "gccode",
+  "max_new_tokens": 10,
+  "counts": {
+    "normal": 29191,
+    "glitch": 2552,
+    "unreachable": 253,
+    "special": 3,
+    "undecodable": 1
+  },
+  "sweep_seconds": 314.38567519999924,
+  "paper_reference": {
+    "glitchprober_llama2": 6425,
+    "glitchcleaner_llama2": 4743
+  }
+}

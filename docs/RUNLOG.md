@@ -53,7 +53,15 @@ glitch tokens against GlitchCleaner's published list for this model
 Their released evaluation code also deviates from their paper's template
 ("Question:" prefix, "return back", newlines, max_new_tokens=10 vs paper-implied
 longer generation). Hypothesis: most of the census gap is template wording +
-generation-length (10 vs 24 tokens). Verification in progress: a second census
-under their code protocol verbatim (`--protocol gccode`), expected to land near
-2,539 if the hypothesis is right. Implication if confirmed: published repair
-rates rest on protocol-artifact denominators.
+generation-length (10 vs 24 tokens). **CONFIRMED (same day):** the `--protocol gccode` census (their template verbatim,
+max_new_tokens=10, their lstrip-containment check) yields **2,552 glitch tokens,
+2,537 of which are in their published 2,539-token list** (99.9% coverage, Jaccard
+0.993). Artifacts: results/ground_truth/mistral-7b-instruct-v01/gccode/.
+Conclusion: our implementation reproduces theirs essentially exactly under their
+protocol; the 988-vs-2,539 gap is pure protocol sensitivity. ~2/3 of this model's
+"glitch tokens" (per their list) stop being glitchy when the model may generate
+24 tokens instead of 10 with the paper-text template. Thesis implication: glitch
+censuses - and therefore all published repair-rate denominators - are protocol
+artifacts to a first approximation. Both protocols are now first-class in the
+pipeline; downstream steps use the paper protocol as primary ground truth, with
+gccode as the comparability baseline against GlitchCleaner's claims.
