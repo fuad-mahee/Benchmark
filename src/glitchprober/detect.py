@@ -25,6 +25,8 @@ def run_detection(
     batch_size: int,
     max_new_tokens: int,
     checkpoint_dir=None,
+    task: str = "repetition",
+    correct_fn=None,
 ) -> dict:
     rng = np.random.default_rng(seed)
     gamma = det_cfg["gamma"]
@@ -37,12 +39,12 @@ def run_detection(
         sample = list(rng.choice(candidates, size=n_sample, replace=False))
         sample_results = repetition_sweep(
             model, tok, sample, batch_size, max_new_tokens, desc="label sample",
-            checkpoint=ckpt("label_sample"),
+            checkpoint=ckpt("label_sample"), task=task, correct_fn=correct_fn,
         )
         y = np.array([0 if sample_results[t][0] else 1 for t in sample])  # 1 = glitch
 
         # --- features + PCA + SVM ---
-        X = extract_features(model, tok, sample, mcfg, features, batch_size, "sample feats").astype(np.float32)
+        X = extract_features(model, tok, sample, mcfg, features, batch_size, "sample feats", task).astype(np.float32)
         pca = PCA(n_components=min(det_cfg["pca_dim"], len(sample) - 1), random_state=seed)
         Xp = pca.fit_transform(X)
         svm = SVC(
@@ -66,7 +68,7 @@ def run_detection(
         chunk_size = 2048
         for i in range(0, len(todo), chunk_size):
             chunk = todo[i : i + chunk_size]
-            Xc = extract_features(model, tok, chunk, mcfg, features, batch_size, "classify").astype(np.float32)
+            Xc = extract_features(model, tok, chunk, mcfg, features, batch_size, "classify", task).astype(np.float32)
             pred = svm.predict(pca.transform(Xc))
             for t, p in zip(chunk, pred):
                 pred_done[t] = int(p)
@@ -80,6 +82,7 @@ def run_detection(
             val = repetition_sweep(
                 model, tok, predicted_glitch, batch_size, max_new_tokens,
                 desc="post-validate", checkpoint=ckpt("post_validate"),
+                task=task, correct_fn=correct_fn,
             )
             G |= {t for t, (ok, _) in val.items() if not ok}
         else:

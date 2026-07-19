@@ -65,3 +65,31 @@ censuses - and therefore all published repair-rate denominators - are protocol
 artifacts to a first approximation. Both protocols are now first-class in the
 pipeline; downstream steps use the paper protocol as primary ground truth, with
 gccode as the comparability baseline against GlitchCleaner's claims.
+
+## 2026-07-19 - Step 2 (RQ2) Mistral: GlitchProber detection, paper-protocol census
+
+3 seeds, gamma=0.1, PCA-75, SVM(poly, C=1, deg=3), post-validation on.
+Results vs our paper-protocol census (988 glitch / 31,743 candidates):
+
+| seed | precision | recall | F1 | time |
+|---|---|---|---|---|
+| 0 | 0.994 | 0.174 | 0.296 | 209s |
+| 1 | 1.000 | 0.335 | 0.502 | 212s |
+| 2 | 0.997 | 0.328 | 0.494 | 213s |
+| mean | 0.997 | 0.279 +/- 0.091 | 0.431 +/- 0.116 | 211s |
+
+Paper claims for Mistral: precision 100%, recall 67.41%, F1 0.8053, 42m39s.
+
+**FINDING 2 (preliminary): massive seed variance.** Recall doubles between
+identical runs that differ only in the random 10% sample (0.174 vs 0.335). The
+paper reports single numbers with no variance.
+
+**FINDING 3 (preliminary): post-validation does not guarantee 100% precision.**
+1-2 false positives per seed vs the census: temperature-0 batched fp16 inference
+is not bit-deterministic, so borderline tokens flip between runs. The paper's
+100%-by-construction only holds relative to its own within-run judgments.
+
+Confound to rule out before comparing recall to the paper: our census has a 3.1%
+glitch base rate (~98 positives in the training sample) vs ~8% under the paper's
+own protocol. Rerunning detection against the gccode census (2,552 glitch) for a
+base-rate-matched comparison - in progress.

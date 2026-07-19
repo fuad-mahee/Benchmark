@@ -15,10 +15,12 @@ from src.common.config import get_model_cfg, load_yaml, results_dir
 from src.common.io_utils import run_metadata, save_json
 
 
-def load_ground_truth(model_name: str):
-    p = results_dir("ground_truth", model_name) / "tokens.csv"
+def load_ground_truth(model_name: str, protocol: str = "paper"):
+    base = results_dir("ground_truth", model_name)
+    p = (base / "tokens.csv") if protocol == "paper" else (base / "gccode" / "tokens.csv")
     if not p.exists():
-        sys.exit(f"missing {p} - run run_ground_truth.py --model {model_name} first")
+        sys.exit(f"missing {p} - run run_ground_truth.py --model {model_name} "
+                 f"--protocol {protocol} first")
     df = pd.read_csv(p)
     candidates = df[df["category"].isin(["normal", "glitch"])]["token_id"].tolist()
     true_glitch = set(df[df["category"] == "glitch"]["token_id"].tolist())
@@ -30,6 +32,8 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--seed", type=int, default=None, help="default: all seeds in config")
     ap.add_argument("--batch-size", type=int, default=None)
+    ap.add_argument("--protocol", choices=["paper", "gccode"], default="paper",
+                    help="which census + repetition-task variant to score against")
     args = ap.parse_args()
 
     mcfg = get_model_cfg(args.model)
@@ -38,8 +42,16 @@ def main():
     batch = args.batch_size or mcfg["batch_size"]
     seeds = [args.seed] if args.seed is not None else gp["seeds"]
 
-    candidates, true_glitch = load_ground_truth(args.model)
-    print(f"{len(candidates)} candidates, {len(true_glitch)} true glitch tokens")
+    if args.protocol == "gccode":
+        task, max_new = "repetition_gccode", 10
+
+        def correct_fn(tok, tid, text):
+            return tok.decode([tid]).lstrip() in text
+    else:
+        task, max_new, correct_fn = "repetition", gt["max_new_tokens"], None
+
+    candidates, true_glitch = load_ground_truth(args.model, args.protocol)
+    print(f"[{args.protocol}] {len(candidates)} candidates, {len(true_glitch)} true glitch tokens")
 
     from src.common.model_utils import load_model, load_tokenizer
     from src.glitchprober.detect import run_detection
@@ -47,13 +59,15 @@ def main():
     tok = load_tokenizer(mcfg)
     model = load_model(mcfg, attn_impl="eager")  # eager: attention patterns needed
 
-    out = results_dir("gp_detect", args.model)
-    ckpt_dir = results_dir("gp_detect", args.model, "checkpoints")
+    out = (results_dir("gp_detect", args.model) if args.protocol == "paper"
+           else results_dir("gp_detect", args.model, "gccode"))
+    ckpt_dir = out / "checkpoints"
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
     all_runs = []
     for seed in seeds:
         r = run_detection(model, tok, mcfg, candidates, true_glitch,
-                          gp["detection"], seed, batch, gt["max_new_tokens"],
-                          checkpoint_dir=ckpt_dir)
+                          gp["detection"], seed, batch, max_new,
+                          checkpoint_dir=ckpt_dir, task=task, correct_fn=correct_fn)
         all_runs.append(r)
         print(f"seed {seed}: P={r['precision']:.3f} R={r['recall']:.3f} "
               f"F1={r['f1']:.3f} time={r['time_seconds']:.0f}s")

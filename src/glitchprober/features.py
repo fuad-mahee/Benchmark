@@ -44,6 +44,7 @@ def extract_features(
     features: list[str],
     batch_size: int = 32,
     desc: str = "features",
+    task: str = "repetition",
 ) -> np.ndarray:
     """Return float16 array [n_tokens, feature_dim]."""
     device = next(model.parameters()).device
@@ -69,7 +70,7 @@ def extract_features(
     try:
         for i in tqdm(range(0, len(token_ids), batch_size), desc=desc):
             chunk = token_ids[i : i + batch_size]
-            input_ids, attention_mask = spliced_batch(tok, chunk, device)
+            input_ids, attention_mask = spliced_batch(tok, chunk, device, task)
             out = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
