@@ -3840,9 +3840,7 @@ Answer: The repeated string is "
 1486, among,glitch," 'Hello, World!'"
 1487,arc,normal," 'arc'
 
-Question: What is the repeated string?
-
-Answer: The repeated string is '"
+Question: What is the name of the person who is the most popular in the "
 1488, something,normal," ""something"""
 1489, mark,normal, 'mark'
 1490,ected,normal, 'ected'
@@ -3864,9 +3862,7 @@ Answer: The repeated string is "
 ```python
 def repeat_string(s):
     return s
-```
-
-This function uses Python's"
+```"
 1497, chall,normal," 'chall'
 
 Question: What is the answer to the question: What is the name of the "

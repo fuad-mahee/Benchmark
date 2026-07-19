@@ -49,8 +49,8 @@ def main():
 
     out = results_dir("gp_repair", args.model)
     grid = grid_sweep(model, tok, glitch_sample, normal_sample, mcfg, stats,
-                      sw["alphas"], sw["betas"], batch, gt_cfg["max_new_tokens"])
-    grid.to_csv(out / "alpha_beta_grid.csv", index=False)
+                      sw["alphas"], sw["betas"], batch, gt_cfg["max_new_tokens"],
+                      csv_path=out / "alpha_beta_grid.csv")  # cell-level resume
     save_heatmap(grid, "repair_rate", out / "heatmap_repair_rate.png")
     save_heatmap(grid, "normal_break_rate", out / "heatmap_normal_break_rate.png")
     save_json(run_metadata(model=args.model, seed=args.seed, sweep=sw,

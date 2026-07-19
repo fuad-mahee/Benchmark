@@ -1,0 +1,82 @@
+{
+  "paper_claims": {
+    "glitch_counts_llama2": {
+      "glitchprober": 6425,
+      "glitchcleaner": 4743
+    },
+    "gp_detection": {
+      "precision": 1.0,
+      "recall_avg": 0.6447,
+      "f1_avg": 0.7835
+    },
+    "gp_repair_rate_avg": 0.5006,
+    "gp_rule_based_repair_rate_avg": 0.3679,
+    "gc_repair_rate_avg": 0.8688,
+    "speed_tok_s": {
+      "base": 66.3,
+      "glitchcleaner": 62.83,
+      "glitchprober": 11.82
+    }
+  },
+  "models": {
+    "smoke-test": {
+      "rq1_ground_truth": {
+        "counts": {
+          "normal": 1201,
+          "glitch": 167,
+          "undecodable": 115,
+          "special": 17
+        },
+        "sweep_seconds": 6.1441459999768995
+      },
+      "rq2_gp_detection": {
+        "mean": {
+          "precision": 1.0,
+          "recall": 0.1317365269461078,
+          "f1": 0.23280423280423285,
+          "time_seconds": 3.733224199997494
+        },
+        "std": {
+          "recall": NaN,
+          "f1": NaN
+        }
+      },
+      "rq3_gp_repair": {
+        "adaptive": {
+          "n_glitch": 100,
+          "repaired": 1,
+          "repair_rate": 0.01,
+          "n_normal_checked": 100,
+          "normal_broken": 0,
+          "normal_break_rate": 0.0
+        },
+        "rule_based": {
+          "n_glitch": 100,
+          "repaired": 28,
+          "repair_rate": 0.28,
+          "n_normal_checked": 100,
+          "normal_broken": 16,
+          "normal_break_rate": 0.16
+        }
+      },
+      "rq4_gc_repair": {
+        "train_repaired": 24,
+        "train_repair_rate": 0.1791044776119403,
+        "heldout_repaired": 6,
+        "heldout_repair_rate": 0.18181818181818182,
+        "normal_ok_adapter_on": 96,
+        "normal_ok_rate_adapter_on": 0.96,
+        "heldout_repaired_adapter_off": 1,
+        "heldout_repair_rate_adapter_off": 0.030303030303030304,
+        "n_train": 134,
+        "n_heldout": 33,
+        "n_normal": 100,
+        "paper_claim_repair_rate_avg": 0.8688
+      }
+    }
+  },
+  "metadata": {
+    "timestamp": "2026-07-19T15:21:40",
+    "git_commit": "8824319"
+  }
+}

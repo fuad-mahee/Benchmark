@@ -39,10 +39,12 @@ def main():
     candidates = [tid for tid, _, cat in classified if cat == "candidate"]
     print(f"candidates after filtering: {len(candidates)}")
 
+    out = results_dir("ground_truth", args.model)
     model = load_model(mcfg, attn_impl=None)  # fastest available attn for generation
     with Timer() as t:
         results = repetition_sweep(
-            model, tok, candidates, batch, gt_cfg["max_new_tokens"], desc="RQ1 sweep"
+            model, tok, candidates, batch, gt_cfg["max_new_tokens"], desc="RQ1 sweep",
+            checkpoint=out / "sweep_checkpoint.csv",  # batch-level resume + full raw outputs
         )
 
     rows = []
@@ -56,7 +58,6 @@ def main():
             rows.append({"token_id": tid, "token": s, "category": cat, "output_snippet": ""})
     df = pd.DataFrame(rows)
 
-    out = results_dir("ground_truth", args.model)
     df.to_csv(out / "tokens.csv", index=False, encoding="utf-8")
     counts = df["category"].value_counts().to_dict()
     save_json(

@@ -48,10 +48,12 @@ def main():
     model = load_model(mcfg, attn_impl="eager")  # eager: attention patterns needed
 
     out = results_dir("gp_detect", args.model)
+    ckpt_dir = results_dir("gp_detect", args.model, "checkpoints")
     all_runs = []
     for seed in seeds:
         r = run_detection(model, tok, mcfg, candidates, true_glitch,
-                          gp["detection"], seed, batch, gt["max_new_tokens"])
+                          gp["detection"], seed, batch, gt["max_new_tokens"],
+                          checkpoint_dir=ckpt_dir)
         all_runs.append(r)
         print(f"seed {seed}: P={r['precision']:.3f} R={r['recall']:.3f} "
               f"F1={r['f1']:.3f} time={r['time_seconds']:.0f}s")

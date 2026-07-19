@@ -34,7 +34,7 @@ models:
 
   mistral-7b-instruct-v01:
     hf_id: mistralai/Mistral-7B-Instruct-v0.1
-    enabled: false
+    enabled: true
     n_layers: 32
     key_layers: [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]   # assumed (papers silent)
     note: largest disagreement between papers (GC 94.80% vs GP 37.65% repair)

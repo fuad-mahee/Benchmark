@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-07-17T21:53:18",
-  "git_commit": "3bb6067",
+  "timestamp": "2026-07-19T15:21:23",
+  "git_commit": "8824319",
   "model": "smoke-test",
   "hf_id": "HuggingFaceTB/SmolLM2-135M-Instruct",
   "limit": 1500,
@@ -10,7 +10,7 @@
     "undecodable": 115,
     "special": 17
   },
-  "sweep_seconds": 13.444727000001876,
+  "sweep_seconds": 6.1441459999768995,
   "paper_reference": {
     "glitchprober_llama2": 6425,
     "glitchcleaner_llama2": 4743
