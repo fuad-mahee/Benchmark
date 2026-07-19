@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-07-19T16:19:22",
+  "git_commit": "706e27d",
+  "model": "mistral-7b-instruct-v01",
+  "seed": 0,
+  "config": {
+    "m": 1.0,
+    "neun_up_quantile": 0.99,
+    "gamma": 0.1,
+    "adaptive": {
+      "k1": 1.0,
+      "b1": 0.0,
+      "k2": 1.0,
+      "b2": 0.0
+    },
+    "rule_based": {
+      "alpha": 4.0,
+      "beta": 1.5
+    }
+  },
+  "protocol": "paper",
+  "sample_cap": null,
+  "results": {
+    "adaptive": {
+      "n_glitch": 988,
+      "repaired": 5,
+      "repair_rate": 0.005060728744939271,
+      "n_normal_checked": 500,
+      "normal_broken": 1,
+      "normal_break_rate": 0.002
+    },
+    "rule_based": {
+      "n_glitch": 988,
+      "repaired": 213,
+      "repair_rate": 0.21558704453441296,
+      "n_normal_checked": 500,
+      "normal_broken": 5,
+      "normal_break_rate": 0.01
+    }
+  },
+  "paper_claims": {
+    "adaptive_avg": 0.5006,
+    "rule_based_avg": 0.3679
+  }
+}

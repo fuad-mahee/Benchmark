@@ -111,3 +111,37 @@ the headline claim does not reproduce from the paper's published description.
 Caveat for thesis: GlitchProber has no released code, so reimplementation-vs-
 claim divergence cannot be fully attributed (threats to validity). Finding 3
 (precision 99.7% != 100%) replicates under both protocols.
+
+## 2026-07-19 - Step 3 (RQ3) Mistral: GlitchProber repair + alpha/beta sensitivity
+
+Repair evaluated on the full glitch set per protocol; collateral on 500 normal
+tokens; m=1, gamma=0.1, seed 0.
+
+| protocol | adaptive repair | rule-based repair | rule collateral |
+|---|---|---|---|
+| paper (988 glitch) | 0.5% | 21.6% | 1.0% |
+| gccode (2,552 glitch) | 3.8% | 26.1% | 6.2% |
+
+Paper claims (Mistral): adaptive 37.60%, rule-based 12.92%.
+
+**FINDING 5: the adaptive alpha/beta method is unimplementable as published.**
+Eq. 9-12's constants (k1,b1,k2,b2) are undisclosed; with identity constants the
+adaptive adjustments are near-zero (computed betas in [-0.6, 0.8], alphas ~1.0)
+and repair is 0.5-3.8%. The claimed 37.6% cannot be approached from the paper's
+own description. Meanwhile our rule-based runs (21.6-26.1%) EXCEED their claimed
+rule baseline (12.92%).
+
+**FINDING 6: beta is inert; alpha does all the work.** The paper's key-neuron
+criterion (act > m=1 in >99% of normal tokens) selects only 0-4 Neun_up neurons
+per layer on Mistral (vs ~10k Neun_down), so beta amplification has nothing to
+act on. 30-cell grid (alphas 1-16 x betas 0.25-4, 500 glitch + 500 normal per
+cell): repair is flat across beta everywhere, rises monotonically in alpha, and
+saturates at 23-24% around alpha=8-16 - above the paper's chosen alpha=4 (which
+yields 20-22%). Best cell 24.0% (alpha=16, beta=0.5). No cell approaches the
+claimed 37.6%. Collateral rises with alpha (1.6-2.4% on the grid; unreported in
+the paper). Heatmaps: results/gp_repair/mistral-7b-instruct-v01/heatmap_*.png.
+
+Interpretation for thesis: the repair mechanism has real but modest effect
+(~quarter of glitch tokens), its published "precise calculation" of alpha/beta is
+not reproducible, and its effective ingredient is coarse suppression of silent
+neurons, not the calibrated two-factor scheme the paper describes.

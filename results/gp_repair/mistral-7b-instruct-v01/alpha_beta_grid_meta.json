@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-07-19T16:30:11",
+  "git_commit": "706e27d",
+  "model": "mistral-7b-instruct-v01",
+  "seed": 0,
+  "sweep": {
+    "alphas": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0
+    ],
+    "betas": [
+      0.25,
+      0.5,
+      1.0,
+      1.5,
+      2.0,
+      4.0
+    ],
+    "n_glitch_sample": 500,
+    "n_normal_sample": 500,
+    "m_sweep": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ]
+  },
+  "n_glitch": 500,
+  "n_normal": 500
+}

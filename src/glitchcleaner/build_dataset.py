@@ -9,7 +9,7 @@ import random
 from pathlib import Path
 
 from ..common.model_utils import token_str
-from ..common.prompts import REPETITION_PREFIX, REPETITION_SUFFIX
+from ..common.prompts import _TEMPLATES
 
 
 def split_glitch_tokens(glitch_ids: list[int], holdout_fraction: float, seed: int):
@@ -20,12 +20,13 @@ def split_glitch_tokens(glitch_ids: list[int], holdout_fraction: float, seed: in
     return ids[n_hold:], ids[:n_hold]  # train, heldout
 
 
-def build_examples(tok, token_ids: list[int]) -> list[dict]:
-    """Prompt + expected answer, with prompt char-length recorded for loss masking."""
+def build_examples(tok, token_ids: list[int], task: str = "repetition") -> list[dict]:
+    """Prompt + expected answer for the given task template."""
+    prefix, suffix = _TEMPLATES[task]
     ex = []
     for tid in token_ids:
         s = token_str(tok, tid)
-        prompt = f"{REPETITION_PREFIX}{s}{REPETITION_SUFFIX}"
+        prompt = f"{prefix}{s}{suffix}"
         ex.append({"token_id": tid, "prompt": prompt, "answer": f" {s.strip() or s}"})
     return ex
 

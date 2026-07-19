@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-07-19T16:36:52",
+  "git_commit": "706e27d",
+  "model": "mistral-7b-instruct-v01",
+  "config": {
+    "seed": 0,
+    "lora": {
+      "r": 4,
+      "alpha": 4,
+      "dropout": 0.0,
+      "target": [
+        "gate",
+        "up"
+      ]
+    },
+    "holdout_fraction": 0.2,
+    "training": {
+      "epochs": 3,
+      "lr": 0.0002,
+      "batch_size": 8,
+      "gradient_accumulation": 2,
+      "mask_prompt_loss": true
+    },
+    "eval": {
+      "max_new_tokens": 24
+    }
+  },
+  "protocol": "paper",
+  "n_train": 791,
+  "n_heldout": 197,
+  "train_seconds": 31.441829699993832
+}

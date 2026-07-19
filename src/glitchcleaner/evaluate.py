@@ -10,13 +10,16 @@ def _rate(results):
 
 
 def evaluate(peft_model, tok, train_glitch, heldout_glitch, normal_sample,
-             batch_size, max_new_tokens) -> dict:
+             batch_size, max_new_tokens, task="repetition", correct_fn=None) -> dict:
     out = {}
 
     # lambda = 1 (adapter on): the repair path
-    tr = repetition_sweep(peft_model, tok, train_glitch, batch_size, max_new_tokens, desc="GC train split")
-    ho = repetition_sweep(peft_model, tok, heldout_glitch, batch_size, max_new_tokens, desc="GC heldout split")
-    n_on = repetition_sweep(peft_model, tok, normal_sample, batch_size, max_new_tokens, desc="GC normal (adapter on)")
+    tr = repetition_sweep(peft_model, tok, train_glitch, batch_size, max_new_tokens,
+                          task=task, desc="GC train split", correct_fn=correct_fn)
+    ho = repetition_sweep(peft_model, tok, heldout_glitch, batch_size, max_new_tokens,
+                          task=task, desc="GC heldout split", correct_fn=correct_fn)
+    n_on = repetition_sweep(peft_model, tok, normal_sample, batch_size, max_new_tokens,
+                            task=task, desc="GC normal (adapter on)", correct_fn=correct_fn)
 
     out["train_repaired"], out["train_repair_rate"] = _rate(tr)
     out["heldout_repaired"], out["heldout_repair_rate"] = _rate(ho)
@@ -26,7 +29,7 @@ def evaluate(peft_model, tok, train_glitch, heldout_glitch, normal_sample,
     # lambda = 0 (adapter off): sanity - glitches should stay broken, normals fine
     with peft_model.disable_adapter():
         ho_off = repetition_sweep(peft_model, tok, heldout_glitch, batch_size, max_new_tokens,
-                                  desc="GC heldout (adapter off)")
+                                  task=task, desc="GC heldout (adapter off)", correct_fn=correct_fn)
     out["heldout_repaired_adapter_off"], out["heldout_repair_rate_adapter_off"] = _rate(ho_off)
 
     out["n_train"], out["n_heldout"], out["n_normal"] = len(train_glitch), len(heldout_glitch), len(normal_sample)
