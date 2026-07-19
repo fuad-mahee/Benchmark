@@ -39,8 +39,12 @@ def repetition_sweep(
     task: str = "repetition",
     desc: str = "sweep",
     checkpoint: Path | str | None = None,
+    correct_fn=None,
 ) -> dict[int, tuple[bool, str]]:
-    """Return {token_id: (is_correct, generated_text)}. is_correct=False => glitch behavior."""
+    """Return {token_id: (is_correct, generated_text)}. is_correct=False => glitch behavior.
+
+    correct_fn(tok, token_id, generated_text) -> bool overrides the default check
+    (used by the gccode protocol to replicate GlitchCleaner's exact judgment)."""
     device = next(model.parameters()).device
     results: dict[int, tuple[bool, str]] = {}
     todo = list(token_ids)
@@ -75,7 +79,10 @@ def repetition_sweep(
             new_tokens = gen[:, input_ids.shape[1] :]
             texts = tok.batch_decode(new_tokens, skip_special_tokens=True)
             for tid, text in zip(chunk, texts):
-                ok = is_repetition_correct(token_str(tok, tid), text)
+                if correct_fn is not None:
+                    ok = correct_fn(tok, tid, text)
+                else:
+                    ok = is_repetition_correct(token_str(tok, tid), text)
                 results[tid] = (ok, text)
                 if writer:
                     writer.writerow([tid, "1" if ok else "0", text])

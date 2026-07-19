@@ -24,6 +24,13 @@ _TEMPLATES = {
     "repetition": (REPETITION_PREFIX, REPETITION_SUFFIX),
     "spelling": (SPELLING_PREFIX, SPELLING_SUFFIX),
     "length": (LENGTH_PREFIX, LENGTH_SUFFIX),
+    # GlitchCleaner's RELEASED CODE (count_passed_glitchtokens in GlitchCleaner.py)
+    # differs from their paper's stated template: "Question:" prefix, "return back"
+    # (not "return it back"), and newlines. Used by the gccode census protocol.
+    "repetition_gccode": (
+        "Question: Can you repeat the string '",
+        "' and return back to me?\nAnswer: Here is the repeated string:\n",
+    ),
 }
 
 
