@@ -145,3 +145,33 @@ Interpretation for thesis: the repair mechanism has real but modest effect
 (~quarter of glitch tokens), its published "precise calculation" of alpha/beta is
 not reproducible, and its effective ingredient is coarse suppression of silent
 neurons, not the calibrated two-factor scheme the paper describes.
+
+## 2026-07-19 - Step 4 (RQ4) Mistral: GlitchCleaner gated LoRA, train vs HELD-OUT
+
+LoRA r=4/alpha=4 on MLP gate+up of layers 19-28 (0.0204% trainable params - the
+"<0.1%" claim holds). 80/20 split, 3 epochs, lr 2e-4, seed 0. Loss converged
+(1.90->0.34 paper-protocol; 1.12->0.15 gccode).
+
+| protocol | n_train / n_heldout | train-split repair | HELD-OUT repair | normal ok (adapter forced on) | heldout repair (adapter off) |
+|---|---|---|---|---|---|
+| paper | 791 / 197 | 81.4% | 55.3% | 93.0% | 0.0% |
+| gccode | 2,042 / 510 | 89.9% | 74.5% | 96.6% | 0.0% |
+
+Paper claims: 86.88% avg across models, 94.80% for Mistral.
+
+**FINDING 7: GlitchCleaner's headline number roughly reproduces on its own
+population.** Under their protocol, train-split repair is 89.9% vs their claimed
+94.8% (gap plausibly hyperparameter detail). The claim is real - for the tokens
+the adapter was trained on.
+
+**FINDING 8: ~15-26 points of the headline is memorization.** On glitch tokens
+the adapter never saw, repair drops to 74.5% (their protocol) / 55.3% (paper
+protocol). The adapter-off control (0.0%) confirms all repair comes from the
+LoRA. Still, held-out GlitchCleaner (55-75%) far exceeds GlitchProber's best
+grid cell (24%): the ranking of the two methods survives honest evaluation,
+but both absolute claims shrink.
+
+Also notable: with the adapter forced on, 3.4-7.0% of normal tokens break -
+the "lossless" property rests entirely on the lambda gate being right, which in
+turn requires a detector at inference time (the coupling the paper leaves
+implicit).
