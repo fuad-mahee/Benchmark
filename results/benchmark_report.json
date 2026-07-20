@@ -73,10 +73,78 @@
         "n_normal": 100,
         "paper_claim_repair_rate_avg": 0.8688
       }
+    },
+    "mistral-7b-instruct-v01": {
+      "rq1_ground_truth": {
+        "counts": {
+          "normal": 30755,
+          "glitch": 988,
+          "unreachable": 253,
+          "special": 3,
+          "undecodable": 1
+        },
+        "sweep_seconds": 205.7225649000029
+      },
+      "rq2_gp_detection": {
+        "mean": {
+          "precision": 0.9970475767007558,
+          "recall": 0.2790148448043185,
+          "f1": 0.43057264909503207,
+          "time_seconds": 211.37944763334235
+        },
+        "std": {
+          "recall": 0.09093741378807654,
+          "f1": 0.11636199829687573
+        }
+      },
+      "rq3_gp_repair": {
+        "adaptive": {
+          "n_glitch": 988,
+          "repaired": 5,
+          "repair_rate": 0.005060728744939271,
+          "n_normal_checked": 500,
+          "normal_broken": 1,
+          "normal_break_rate": 0.002
+        },
+        "rule_based": {
+          "n_glitch": 988,
+          "repaired": 213,
+          "repair_rate": 0.21558704453441296,
+          "n_normal_checked": 500,
+          "normal_broken": 5,
+          "normal_break_rate": 0.01
+        }
+      },
+      "rq4_gc_repair": {
+        "train_repaired": 644,
+        "train_repair_rate": 0.8141592920353983,
+        "heldout_repaired": 109,
+        "heldout_repair_rate": 0.5532994923857868,
+        "normal_ok_adapter_on": 465,
+        "normal_ok_rate_adapter_on": 0.93,
+        "heldout_repaired_adapter_off": 0,
+        "heldout_repair_rate_adapter_off": 0.0,
+        "n_train": 791,
+        "n_heldout": 197,
+        "n_normal": 500,
+        "paper_claim_repair_rate_avg": 0.8688
+      },
+      "rq5_speed": {
+        "tokens_per_second": {
+          "base": 31.75744315158763,
+          "gp_hooks": 19.98954963228586,
+          "gc_adapter": 17.92915214263845
+        },
+        "relative": {
+          "base": 1.0,
+          "gp_hooks": 0.6294445537340602,
+          "gc_adapter": 0.5645653542401801
+        }
+      }
     }
   },
   "metadata": {
-    "timestamp": "2026-07-19T15:21:40",
-    "git_commit": "8824319"
+    "timestamp": "2026-07-20T11:55:54",
+    "git_commit": "36a3094"
   }
 }

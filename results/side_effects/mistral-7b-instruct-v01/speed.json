@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-07-20T11:55:18",
+  "git_commit": "36a3094",
+  "model": "mistral-7b-instruct-v01",
+  "tokens_per_second": {
+    "base": 31.75744315158763,
+    "gp_hooks": 19.98954963228586,
+    "gc_adapter": 17.92915214263845
+  },
+  "relative": {
+    "base": 1.0,
+    "gp_hooks": 0.6294445537340602,
+    "gc_adapter": 0.5645653542401801
+  },
+  "paper_claims_tok_s": {
+    "base": 66.3,
+    "gc": 62.83,
+    "gp": 11.82
+  }
+}

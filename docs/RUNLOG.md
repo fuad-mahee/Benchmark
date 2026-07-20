@@ -175,3 +175,23 @@ Also notable: with the adapter forced on, 3.4-7.0% of normal tokens break -
 the "lossless" property rests entirely on the lambda gate being right, which in
 turn requires a detector at inference time (the coupling the paper leaves
 implicit).
+
+## 2026-07-19 - Step 5 (RQ5) Mistral: inference speed
+
+Greedy 256-token generation, 5 reps after warmup, single prompt, A6000 fp16:
+
+| variant | tok/s | relative to base | GlitchCleaner Table 6 (relative) |
+|---|---|---|---|
+| base | 31.76 | 1.00 | 1.00 |
+| GP repair hooks | 19.99 | 0.63 | 0.18 (11.82/66.30) |
+| GC adapter (unmerged, gated) | 17.93 | 0.56 | 0.95 (62.83/66.30) |
+
+**FINDING 9: both speed claims fail to reproduce as ratios.** GlitchCleaner's
+"negligible impact" is a 44% slowdown in our unmerged gated-LoRA setup (their
+gate precludes weight-merging, so extra matmuls are inherent); GlitchProber's
+alleged 5.6x catastrophe is only a 1.6x penalty when the hooks are implemented
+with plain tensor ops. The paper's comparison likely reflects implementation
+quality, not method cost. Caveats for thesis: different hardware (H200 vs
+A6000), single-prompt setting, and their GP reimplementation is unpublished.
+
+Absolute numbers are hardware-bound; only ratios are compared.
