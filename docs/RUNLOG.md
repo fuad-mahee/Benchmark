@@ -195,3 +195,77 @@ quality, not method cost. Caveats for thesis: different hardware (H200 vs
 A6000), single-prompt setting, and their GP reimplementation is unpublished.
 
 Absolute numbers are hardware-bound; only ratios are compared.
+
+---
+
+## 2026-07-30 - EXTERNAL AUDIT + CORRECTIONS (read this before citing anything above)
+
+The implementation was submitted to an independent adversarial audit. It found two
+errors that invalidate specific results above, several correctness defects, and
+several conclusions stated more strongly than the evidence supports. Everything
+below supersedes the corresponding claims above. The authoritative write-up is
+`docs/benchmark_study.tex`.
+
+### Material errors (results above are affected)
+
+* **E1 - GP repair modified the wrong tensor.** Findings 5/6 and all RQ3 numbers
+  above adjusted the already-multiplied gate x data product instead of the two
+  streams separately (paper Eq. 3-5, Fig. 5). Corrected in `repair.py`; the old
+  behaviour is retained as `--stream-mode product` for the ablation.
+* **E2 - GC's lambda gate was absent.** Findings 8/9's clean-input and speed
+  numbers used an always-on adapter, so they were not measuring GlitchCleaner.
+  Gate implemented in `src/glitchcleaner/gate.py`.
+
+### Correctness defects fixed
+Unseeded GC training; dropped final gradient-accumulation window each epoch;
+adaptive alpha/beta fitted on their own evaluation set; abs() inserted into the
+published signed Eq. 10; 18/197 held-out tokens leaked into training sequences;
+training targets stripped/unquoted where upstream uses unstripped+quoted; census
+ran SDPA while detection ran eager; stale checkpoint silently resumed by the
+"corrected" grid; m-sweep configured but never executed. All addressed; see
+commits 0c03490 and a3d1042.
+
+### Findings re-adjudicated against the stored artefacts
+
+* **Finding 1 - umbrella claim SURVIVES, stated cause REFUTED.** A post-hoc
+  factorial over the archived generations (6 of 8 cells recoverable, since greedy
+  decoding makes prefix truncation exact) attributes the +1,564 gap as:
+  prompt wording **+1,549 (99.0%)**, match rule +14 (0.9%), generation length
+  **+1 (0.06%)**. The run log above blamed generation length - the one factor that
+  turned out to be inert. Mechanism: 42.7% of gccode-glitch tokens emit pure
+  whitespace (newline attractor from the template's trailing newline). The
+  disagreement is also bidirectional: 146 tokens go the other way.
+* **Finding 3 - measurement stands, cause REFUTED, framing was unfair.** Precision
+  99.7% is real, but the residual comes from OUR OWN SDPA-vs-eager kernel
+  mismatch (0.37-0.42% of generations differ in text, 0.021% in verdict,
+  deterministically), not fp16 nondeterminism. Under the paper protocol ALL false
+  positives entered via sample labelling; post-validation admitted 0 in 1,047
+  confirmations. Counts are 1,0,1 and 3,4,1 - not "1-2 per seed". Also: the
+  paper's 100% is definitional (post-validation defines membership by the same
+  test), so the honest claim is narrower - a self-referential 100% does not
+  survive contact with an independent census, and the residual is governed by the
+  inference stack, which neither paper specifies.
+* **Finding 5 - "unimplementable" WITHDRAWN.** Correct claim: the published
+  adaptive calibration is *unrecoverable* (k1,b1,k2,b2 never given; "adaptive
+  process" never described; range-restriction intervals never stated; promised
+  default values absent; Algorithm 2 contradicts Eq. 9-10 on inputs and Sec. 4.2.2
+  on scope; no code). Our identity-constant result must NOT be cited as the
+  method's performance - it pins alpha~1, which the grid independently identifies
+  as the null-intervention regime. The defensible quantitative claim is about the
+  *gain attributed to calibration*: the paper reports 2.91x (37.60/12.92), which
+  from our measured (alpha=4,beta=1.5) point would require ~60% repair; the grid
+  maximum is 24.0%.
+* **Finding 6 - "beta is inert" WITHDRAWN.** Alpha dominates (marginal spread
+  20.2pp vs 0.6pp), but beta's effect is conditional and sign-flipping: at
+  alpha=1 it lifts repair 0/500 -> 34/500; at alpha>=2 repair declines slightly
+  as beta grows. "Alpha does all the work" survives as a magnitude statement.
+* **NEW - the unstated implementation choices dominate.** Tensor (product vs
+  separate) and positions (token-only vs all) are both unspecified in the paper
+  and together move repair rate by roughly an order of magnitude at fixed
+  alpha/beta. For this method they matter more than the withheld constants.
+
+### Reruns
+All RQ3/RQ4/RQ5 numbers are being regenerated under the corrected implementation,
+plus: the 2x2 implementation-choice ablation, the m-sweep, the closing factorial
+cell (gccode prompt @ 24 tokens), and GC retrained with the authors' own
+hyperparameters. See `docs/benchmark_study.tex` for the final numbers.
