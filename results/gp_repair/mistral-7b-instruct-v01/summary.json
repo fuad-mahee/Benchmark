@@ -1,17 +1,30 @@
 {
-  "timestamp": "2026-07-19T16:19:22",
-  "git_commit": "706e27d",
+  "timestamp": "2026-07-30T18:36:24",
+  "git_commit": "0c03490",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
   "model": "mistral-7b-instruct-v01",
   "seed": 0,
   "config": {
     "m": 1.0,
     "neun_up_quantile": 0.99,
     "gamma": 0.1,
+    "stream_mode": "separate",
+    "position": "token",
+    "adaptive_fit_fraction": 0.5,
     "adaptive": {
       "k1": 1.0,
       "b1": 0.0,
       "k2": 1.0,
-      "b2": 0.0
+      "b2": 0.0,
+      "alpha_min": 1.0
     },
     "rule_based": {
       "alpha": 4.0,
@@ -19,27 +32,260 @@
     }
   },
   "protocol": "paper",
+  "stream_mode": "separate",
+  "position": "token",
   "sample_cap": null,
-  "results": {
-    "adaptive": {
-      "n_glitch": 988,
-      "repaired": 5,
-      "repair_rate": 0.005060728744939271,
-      "n_normal_checked": 500,
-      "normal_broken": 1,
-      "normal_break_rate": 0.002
+  "n_glitch_total": 988,
+  "n_fit": 494,
+  "n_eval": 494,
+  "neuron_selection": {
+    "L19.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 5177,
+      "d_mlp": 14336
     },
-    "rule_based": {
-      "n_glitch": 988,
-      "repaired": 213,
-      "repair_rate": 0.21558704453441296,
-      "n_normal_checked": 500,
-      "normal_broken": 5,
-      "normal_break_rate": 0.01
+    "L19.data": {
+      "n_neun_up": 21,
+      "n_neun_down": 1748,
+      "d_mlp": 14336
+    },
+    "L20.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 3046,
+      "d_mlp": 14336
+    },
+    "L20.data": {
+      "n_neun_up": 6,
+      "n_neun_down": 576,
+      "d_mlp": 14336
+    },
+    "L21.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 1551,
+      "d_mlp": 14336
+    },
+    "L21.data": {
+      "n_neun_up": 3,
+      "n_neun_down": 227,
+      "d_mlp": 14336
+    },
+    "L22.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 971,
+      "d_mlp": 14336
+    },
+    "L22.data": {
+      "n_neun_up": 4,
+      "n_neun_down": 156,
+      "d_mlp": 14336
+    },
+    "L23.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 710,
+      "d_mlp": 14336
+    },
+    "L23.data": {
+      "n_neun_up": 3,
+      "n_neun_down": 91,
+      "d_mlp": 14336
+    },
+    "L24.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 605,
+      "d_mlp": 14336
+    },
+    "L24.data": {
+      "n_neun_up": 3,
+      "n_neun_down": 79,
+      "d_mlp": 14336
+    },
+    "L25.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 531,
+      "d_mlp": 14336
+    },
+    "L25.data": {
+      "n_neun_up": 1,
+      "n_neun_down": 62,
+      "d_mlp": 14336
+    },
+    "L26.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 418,
+      "d_mlp": 14336
+    },
+    "L26.data": {
+      "n_neun_up": 3,
+      "n_neun_down": 66,
+      "d_mlp": 14336
+    },
+    "L27.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 452,
+      "d_mlp": 14336
+    },
+    "L27.data": {
+      "n_neun_up": 6,
+      "n_neun_down": 105,
+      "d_mlp": 14336
+    },
+    "L28.gate": {
+      "n_neun_up": 3,
+      "n_neun_down": 482,
+      "d_mlp": 14336
+    },
+    "L28.data": {
+      "n_neun_up": 8,
+      "n_neun_down": 148,
+      "d_mlp": 14336
     }
   },
-  "paper_claims": {
-    "adaptive_avg": 0.5006,
-    "rule_based_avg": 0.3679
+  "adaptive_factors": {
+    "L19.gate": {
+      "beta": 0.0,
+      "alpha": 1.655449,
+      "d_act_up": 0.0,
+      "d_act_down": 1.655449
+    },
+    "L19.data": {
+      "beta": 0.173281,
+      "alpha": 1.0,
+      "d_act_up": 0.173281,
+      "d_act_down": 0.788064
+    },
+    "L20.gate": {
+      "beta": 0.213368,
+      "alpha": 23.576338,
+      "d_act_up": 0.213368,
+      "d_act_down": 23.576338
+    },
+    "L20.data": {
+      "beta": 0.283606,
+      "alpha": 1.052806,
+      "d_act_up": 0.283606,
+      "d_act_down": 1.052806
+    },
+    "L21.gate": {
+      "beta": 0.0,
+      "alpha": 1.046147,
+      "d_act_up": 0.0,
+      "d_act_down": 1.046147
+    },
+    "L21.data": {
+      "beta": 0.220314,
+      "alpha": 1.0,
+      "d_act_up": 0.220314,
+      "d_act_down": 0.978669
+    },
+    "L22.gate": {
+      "beta": 0.0,
+      "alpha": 1.0,
+      "d_act_up": 0.0,
+      "d_act_down": 0.948745
+    },
+    "L22.data": {
+      "beta": -0.091981,
+      "alpha": 1.0,
+      "d_act_up": -0.091981,
+      "d_act_down": 0.890631
+    },
+    "L23.gate": {
+      "beta": 0.068706,
+      "alpha": 1.0,
+      "d_act_up": 0.068706,
+      "d_act_down": 0.936923
+    },
+    "L23.data": {
+      "beta": -0.061768,
+      "alpha": 1.0,
+      "d_act_up": -0.061768,
+      "d_act_down": 0.937841
+    },
+    "L24.gate": {
+      "beta": 0.186012,
+      "alpha": 1.0,
+      "d_act_up": 0.186012,
+      "d_act_down": 0.961649
+    },
+    "L24.data": {
+      "beta": 0.134516,
+      "alpha": 1.0,
+      "d_act_up": 0.134516,
+      "d_act_down": 0.933503
+    },
+    "L25.gate": {
+      "beta": 0.0,
+      "alpha": 1.0,
+      "d_act_up": 0.0,
+      "d_act_down": 0.96632
+    },
+    "L25.data": {
+      "beta": 0.102105,
+      "alpha": 1.0,
+      "d_act_up": 0.102105,
+      "d_act_down": 0.947709
+    },
+    "L26.gate": {
+      "beta": 0.230051,
+      "alpha": 1.0,
+      "d_act_up": 0.230051,
+      "d_act_down": 0.984386
+    },
+    "L26.data": {
+      "beta": 0.13222,
+      "alpha": 1.0,
+      "d_act_up": 0.13222,
+      "d_act_down": 0.924746
+    },
+    "L27.gate": {
+      "beta": -0.013418,
+      "alpha": 1.0,
+      "d_act_up": -0.013418,
+      "d_act_down": 0.961608
+    },
+    "L27.data": {
+      "beta": 0.323741,
+      "alpha": 1.0,
+      "d_act_up": 0.323741,
+      "d_act_down": 0.886413
+    },
+    "L28.gate": {
+      "beta": 0.701505,
+      "alpha": 1.0,
+      "d_act_up": 0.701505,
+      "d_act_down": 0.975707
+    },
+    "L28.data": {
+      "beta": 0.401369,
+      "alpha": 1.0,
+      "d_act_up": 0.401369,
+      "d_act_down": 0.910746
+    }
+  },
+  "results": {
+    "adaptive": {
+      "n_glitch": 494,
+      "repaired": 5,
+      "repair_rate": 0.010121457489878543,
+      "n_normal_checked": 500,
+      "normal_broken": 0,
+      "normal_break_rate": 0.0
+    },
+    "rule_based": {
+      "n_glitch": 494,
+      "repaired": 32,
+      "repair_rate": 0.06477732793522267,
+      "n_normal_checked": 500,
+      "normal_broken": 0,
+      "normal_break_rate": 0.0
+    }
+  },
+  "paper_claims_mistral": {
+    "adaptive": 0.376,
+    "rule_based": 0.1292
+  },
+  "paper_claims_avg": {
+    "adaptive": 0.5006,
+    "rule_based": 0.3679
   }
 }

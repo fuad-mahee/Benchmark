@@ -1,6 +1,15 @@
 {
-  "timestamp": "2026-07-19T16:30:11",
-  "git_commit": "706e27d",
+  "timestamp": "2026-07-30T18:39:13",
+  "git_commit": "0c03490",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
   "model": "mistral-7b-instruct-v01",
   "seed": 0,
   "sweep": {
@@ -29,6 +38,117 @@
       4.0
     ]
   },
+  "protocol": "paper",
+  "stream_mode": "separate",
+  "position": "token",
+  "neuron_selection": {
+    "L19.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 5187,
+      "d_mlp": 14336
+    },
+    "L19.data": {
+      "n_neun_up": 19,
+      "n_neun_down": 1736,
+      "d_mlp": 14336
+    },
+    "L20.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 2971,
+      "d_mlp": 14336
+    },
+    "L20.data": {
+      "n_neun_up": 6,
+      "n_neun_down": 576,
+      "d_mlp": 14336
+    },
+    "L21.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 1519,
+      "d_mlp": 14336
+    },
+    "L21.data": {
+      "n_neun_up": 3,
+      "n_neun_down": 218,
+      "d_mlp": 14336
+    },
+    "L22.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 982,
+      "d_mlp": 14336
+    },
+    "L22.data": {
+      "n_neun_up": 4,
+      "n_neun_down": 145,
+      "d_mlp": 14336
+    },
+    "L23.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 701,
+      "d_mlp": 14336
+    },
+    "L23.data": {
+      "n_neun_up": 3,
+      "n_neun_down": 97,
+      "d_mlp": 14336
+    },
+    "L24.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 586,
+      "d_mlp": 14336
+    },
+    "L24.data": {
+      "n_neun_up": 4,
+      "n_neun_down": 68,
+      "d_mlp": 14336
+    },
+    "L25.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 555,
+      "d_mlp": 14336
+    },
+    "L25.data": {
+      "n_neun_up": 1,
+      "n_neun_down": 56,
+      "d_mlp": 14336
+    },
+    "L26.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 424,
+      "d_mlp": 14336
+    },
+    "L26.data": {
+      "n_neun_up": 2,
+      "n_neun_down": 59,
+      "d_mlp": 14336
+    },
+    "L27.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 442,
+      "d_mlp": 14336
+    },
+    "L27.data": {
+      "n_neun_up": 5,
+      "n_neun_down": 112,
+      "d_mlp": 14336
+    },
+    "L28.gate": {
+      "n_neun_up": 3,
+      "n_neun_down": 449,
+      "d_mlp": 14336
+    },
+    "L28.data": {
+      "n_neun_up": 7,
+      "n_neun_down": 158,
+      "d_mlp": 14336
+    }
+  },
   "n_glitch": 500,
-  "n_normal": 500
+  "n_normal": 500,
+  "best_cell": {
+    "alpha": 16.0,
+    "beta": 0.5,
+    "repair_rate": 0.24,
+    "normal_break_rate": 0.018
+  }
 }

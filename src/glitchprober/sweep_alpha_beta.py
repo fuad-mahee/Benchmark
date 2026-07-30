@@ -17,14 +17,28 @@ def grid_sweep(model, tok, glitch_sample, normal_sample, mcfg, stats,
                task="repetition", correct_fn=None,
                position="token", stream_mode="separate") -> pd.DataFrame:
     """Cell-level checkpointing: each completed (alpha, beta) cell is written to
-    csv_path immediately; on restart, already-computed cells are skipped."""
+    csv_path immediately; on restart, already-computed cells are skipped.
+
+    Resumption is guarded by a configuration fingerprint - a checkpoint written by
+    a different implementation or setting is refused rather than silently extended.
+    """
+    from ..common.io_utils import checkpoint_guard
+
     rows, done = [], set()
-    if csv_path and Path(csv_path).exists():
-        prev = pd.read_csv(csv_path)
-        rows = prev.to_dict("records")
-        done = {(r["alpha"], r["beta"]) for r in rows}
-        if done:
-            print(f"grid sweep: resumed {len(done)} cells from checkpoint")
+    if csv_path:
+        resumable = checkpoint_guard(csv_path, {
+            "experiment": "alpha_beta_grid",
+            "stream_mode": stream_mode, "position": position, "task": task,
+            "max_new_tokens": max_new_tokens,
+            "n_glitch": len(glitch_sample), "n_normal": len(normal_sample),
+            "alphas": list(alphas), "betas": list(betas),
+        })
+        if resumable:
+            prev = pd.read_csv(csv_path)
+            rows = prev.to_dict("records")
+            done = {(float(r["alpha"]), float(r["beta"])) for r in rows}
+            if done:
+                print(f"grid sweep: resumed {len(done)} cells from checkpoint")
     for a in alphas:
         for b in betas:
             if (float(a), float(b)) in done:
