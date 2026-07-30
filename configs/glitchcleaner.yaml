@@ -1,16 +1,44 @@
-# GlitchCleaner (gated LoRA) - paper settings plus our held-out split (the circularity test).
+# GlitchCleaner (gated LoRA) - hyperparameters taken from the AUTHORS' released
+# training script (third_party/GlitchCleaner/Fine-tuning/fine-tuning.py) so that
+# a hyperparameter mismatch cannot explain any difference in outcome, plus our
+# held-out split (the generalisation test the paper does not run).
 seed: 0
+
 lora:
-  r: 4                    # paper
-  alpha: 4                # paper scaling factor
+  r: 4                    # upstream lora_r = 4
+  alpha: 4                # upstream lora_alpha = 1 * lora_r
   dropout: 0.0
-  target: [gate, up]      # MLP gate + data projections of key layers only (paper)
-holdout_fraction: 0.2     # paper trains and evaluates on the SAME tokens; we hold out 20%
-training:
-  epochs: 3
-  lr: 2.0e-4
-  batch_size: 8
-  gradient_accumulation: 2
+  target: [gate, up]      # MLP gate + data projections of key layers only
+
+# The paper trains AND evaluates on the same glitch tokens. We hold out a
+# fraction that the adapter never trains on, so that "repair" can be
+# distinguished from "memorisation of the training set".
+holdout_fraction: 0.2
+# Tokens whose raw vocabulary id appears anywhere in a training sequence are
+# excluded from the held-out set: otherwise the adapter has seen the id (as
+# context, or inside another token's decoded text) and "unseen" is not accurate.
+exclude_leaked_from_holdout: true
+
+training:                 # all values below match upstream unless noted
+  epochs: 15
+  lr: 1.0e-4
+  batch_size: 8           # DEVIATION: upstream 64. Same effective batch via accumulation;
+  gradient_accumulation: 64   # 8*64 = 512 = upstream 64*8. Fits one A6000 instead of their setup.
+  weight_decay: 0.01
+  scheduler: linear
+  warmup_ratio: 0.1
+  grad_clip: 1.0
+  max_length: 384
   mask_prompt_loss: true  # loss only on the answer span
+
+# How the token under test is rendered into the training prompt.
+#   "decoded" = the authors' construction: the decoded token string, unstripped,
+#               wrapped in single quotes as the target answer.
+#   Note the authors' own EVALUATION splices the raw vocabulary id instead, so a
+#   train/eval asymmetry exists in their pipeline too; we measure its size rather
+#   than assume it is harmless.
+prompt_style: decoded
+
 eval:
-  max_new_tokens: 24
+  max_new_tokens: 24      # paper protocol; the gccode protocol uses 10
+  gated: true             # apply the paper's lambda switch (see src/glitchcleaner/gate.py)

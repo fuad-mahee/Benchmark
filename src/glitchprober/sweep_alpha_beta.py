@@ -13,7 +13,9 @@ from .repair import evaluate_repair
 
 def grid_sweep(model, tok, glitch_sample, normal_sample, mcfg, stats,
                alphas, betas, batch_size, max_new_tokens,
-               csv_path: Path | str | None = None) -> pd.DataFrame:
+               csv_path: Path | str | None = None,
+               task="repetition", correct_fn=None,
+               position="token", stream_mode="separate") -> pd.DataFrame:
     """Cell-level checkpointing: each completed (alpha, beta) cell is written to
     csv_path immediately; on restart, already-computed cells are skipped."""
     rows, done = [], set()
@@ -30,10 +32,15 @@ def grid_sweep(model, tok, glitch_sample, normal_sample, mcfg, stats,
             r = evaluate_repair(
                 model, tok, glitch_sample, normal_sample, mcfg, stats,
                 {"alpha": a, "beta": b}, batch_size, max_new_tokens,
+                task=task, correct_fn=correct_fn, position=position,
+                stream_mode=stream_mode,
             )
             rows.append({"alpha": float(a), "beta": float(b),
                          "repair_rate": r["repair_rate"],
-                         "normal_break_rate": r["normal_break_rate"]})
+                         "repaired": r["repaired"], "n_glitch": r["n_glitch"],
+                         "normal_break_rate": r["normal_break_rate"],
+                         "normal_broken": r["normal_broken"],
+                         "n_normal": r["n_normal_checked"]})
             if csv_path:
                 pd.DataFrame(rows).to_csv(csv_path, index=False)
             print(f"alpha={a} beta={b}: repair={r['repair_rate']:.3f} "

@@ -1,0 +1,238 @@
+"token_id","set","ok_after_repair","generated"
+"924","glitch","0"," 'n'
+
+Question: What is the repeated string?
+
+Answer:"
+"890","glitch","1"," '__'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"1292","glitch","0"," ""(((((((((((((((((((((((((((((((((((((((((((((("
+"573","glitch","0"," ""Hello World"""
+"1330","glitch","1"," 'govern'."
+"1036","glitch","0"," 'be'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'be'"
+"1108","glitch","1"," "" study ""
+
+Question: What is the repeated string?
+
+Answer: The repeated string is "" study """
+"947","glitch","1","
+
+```python
+def repeat_string(s):
+    return s.replace('ically', '1')
+"
+"1260","glitch","1"," 'hers'"
+"1122","glitch","0"," 'Children'"
+"707","glitch","0"," 'on'
+
+Question: What is the repeated string?
+
+Answer:"
+"1470","glitch","0"," 'Hello, World!'"
+"936","glitch","0","
+
+```python
+def repeat_string(s):
+    return s
+```
+
+This function uses Python's"
+"651","glitch","1"," 'ro'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ro'"
+"1468","glitch","0"," '['
+
+I am using Python 3.7."
+"632","glitch","0"," 'f e'"
+"1355","glitch","0"," 'Hello, World!'"
+"1486","glitch","0"," 'a'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"217","glitch","0","
+
+```python
+def repeat_string(s):
+    return s
+```
+
+This function uses Python's"
+"1321","glitch","0"," ""Hello World"""
+"192","glitch","0"," 'C'
+
+Answer: Here is the repeated string: 'C'
+
+Explanation:
+
+The repeated"
+"1461","glitch","0"," 'Various'."
+"738","glitch","0"," 'Hello, World!'"
+"1403","glitch","0"," ""Phys"""
+"782","glitch","0"," 'differ'."
+"1090","glitch","0"," 'A'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"1104","glitch","0"," 'al'
+
+Question: What is the repeated string?
+
+Answer: Here is the repeated string: '"
+"1098","glitch","1"," ""grou""
+
+Question: What is the answer to the question: What is the repeated string 'grou"
+"945","glitch","0"," '
+
+```python
+def repeat_string(s):
+    return s
+```"
+"1121","glitch","0"," 'al'
+
+Question: What is the repeated string?
+
+Answer: Here is the repeated string: '"
+"202","glitch","0"," 'f'
+
+Question: What is the repeated string?
+
+Answer:"
+"710","glitch","0"," ""clint"""
+"196","glitch","0"," 'b'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'b'"
+"1033","glitch","0"," 1/2/3/4/5/6/7/8/9/10/11"
+"288","glitch","0"," ""Hello World"""
+"1014","glitch","0"," 12345678901234567890123"
+"578","glitch","0"," ""Hello World"""
+"1479","glitch","0"," 'p'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'p'"
+"1308","glitch","0"," ""edu"""
+"1184","glitch","0"," ""Hello World"""
+"1215","normal","1"," 'state'."
+"1462","normal","1"," 'name'"
+"992","normal","1"," 'ron'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"615","normal","0"," 's y'."
+"796","normal","0"," ' 1 2 3 4 5 6 7 8 9 10 1"
+"773","normal","1"," 'port'."
+"769","normal","1"," 'ise'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"789","normal","1"," 
+```python
+def repeat_string(s):
+    return s.replace('oth', '1')
+"
+"1100","normal","1"," 'sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol sol"
+"930","normal","1"," 'ref'
+
+Question: What is the answer to the question: What is the repeated string 'ref' and"
+"703","normal","1"," 'ove'
+
+Question: What is the repeated string?
+
+Answer:"
+"1008","normal","1"," ""prog"""
+"1482","normal","1"," 'et'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'et'"
+"393","normal","1"," 's su'"
+"642","normal","1"," 'ities'"
+"1438","normal","1"," 'become'"
+"256","normal","1","   '   '
+
+Question: What is the name of the person who is wearing a red shirt?
+
+"
+"1195","normal","1"," 'the'
+
+The answer is: The answer is: The answer is: The answer is: The answer is"
+"68","normal","1"," 'T'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'T'"
+"98","normal","1"," 'r'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'r'"
+"1318","normal","1"," Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad Ad"
+"814","normal","1"," ""ram""
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"1246","normal","1"," 'ired'
+
+Question: What is the name of the person who is the most popular in the city?
+"
+"378","normal","1"," 'The'
+
+The answer is: Here is the repeated string: 'The'
+
+Explanation: The repeated"
+"1189","normal","1"," '=='
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"818","normal","1"," 'arch'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"1153","normal","1"," 'ier'"
+"1358","normal","1"," 'ccess'"
+"716","normal","1"," 'rel'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'rel'"
+"469","normal","1"," 'your'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'your'"
+"778","normal","1"," 'ictictictictictictictictictictictictictictictictictictictictictictict"
+"33","normal","1"," 11111111111111111111111"
+"1071","normal","0"," 'C'
+
+Question: What is the repeated string?
+
+Answer:"
+"1256","normal","1"," 'beh'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'be"
+"1408","normal","0"," 'CAP'"
+"860","normal","1"," 'ution'"
+"562","normal","1"," ' ar'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is ' ar '"
+"1389","normal","1"," 'pos'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"23","normal","1"," 'Hello, World!'"
+"300","normal","1"," 'om'
+
+Question: What is the repeated string?
+
+Answer:"

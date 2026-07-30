@@ -9,16 +9,33 @@ detection:
     C: 1.0
     degree: 3
   features: [attn_pattern, mlp_gate, mlp_data]   # paper's chosen combination
-  post_validation: true   # re-check every SVM positive with the repetition task (=> 100% precision by construction)
+  post_validation: true   # re-check every SVM positive with the repetition task
+  # Sequence position the features are read from. The paper never states it.
+  # "token" = the position of the token under test (our default, matches
+  # "activation states of glitch tokens"); "last" = final prompt position.
+  position: token
 
 repair:
   m: 1.0                  # activation threshold for key-neuron selection (paper Sec. 6.1)
   neun_up_quantile: 0.99  # active in >99% of normal tokens
   gamma: 0.1              # normal-token sampling rate for statistics
+  # The paper's MLP status is two separate signals (Eq. 3-5, Fig. 5):
+  #   "separate" = adjust MLP gate and MLP data independently  <- the paper
+  #   "product"  = adjust their already-multiplied product     <- our v1 error,
+  #                kept only so the two can be compared in the ablation.
+  stream_mode: separate
+  position: token
+  # Fraction of the glitch set used ONLY to fit the adaptive alpha/beta; the
+  # complement is the evaluation set. Without this, the adaptive variant is
+  # fitted on the very tokens it is scored on (the fixed-value variants are not),
+  # which flatters it. Both variants are scored on the same complement.
+  adaptive_fit_fraction: 0.5
   # Paper Eq. 11-12: beta = k1*dAct_up + b1 ; alpha = k2*dAct_down + b2.
-  # k1,b1,k2,b2 are UNDISCLOSED ("derived through an adaptive process"). These defaults are
-  # our reimplementation choice - a documented reproducibility gap.
-  adaptive: { k1: 1.0, b1: 0.0, k2: 1.0, b2: 0.0 }
+  # k1,b1,k2,b2 are UNDISCLOSED ("derived through an adaptive process"), and the
+  # "range restriction" the paper mentions is unspecified. These defaults are
+  # OUR reimplementation choice - a documented reproducibility gap, not a
+  # reconstruction of the authors' values.
+  adaptive: { k1: 1.0, b1: 0.0, k2: 1.0, b2: 0.0, alpha_min: 1.0 }
   rule_based: { alpha: 4.0, beta: 1.5 }   # the paper's fixed-value baseline
 
 alpha_beta_sweep:          # RQ3 sensitivity: is alpha=4 / beta=1.5 special, or is the landscape flat?
@@ -26,4 +43,4 @@ alpha_beta_sweep:          # RQ3 sensitivity: is alpha=4 / beta=1.5 special, or 
   betas: [0.25, 0.5, 1.0, 1.5, 2.0, 4.0]
   n_glitch_sample: 500     # per grid cell
   n_normal_sample: 500     # collateral-damage check per cell
-  m_sweep: [0.25, 0.5, 1.0, 2.0, 4.0]   # optional threshold sensitivity at fixed alpha/beta
+  m_sweep: [0.25, 0.5, 1.0, 2.0, 4.0]   # threshold sensitivity, run by --sweep m

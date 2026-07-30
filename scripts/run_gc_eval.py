@@ -23,13 +23,17 @@ def main():
     ap.add_argument("--normal-sample", type=int, default=500)
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--protocol", choices=["paper", "gccode"], default="paper")
+    ap.add_argument("--tag", default=None)
     args = ap.parse_args()
 
     mcfg = get_model_cfg(args.model)
     gc = load_yaml("glitchcleaner.yaml")
     batch = args.batch_size or mcfg["batch_size"]
-    out = (results_dir("gc", args.model) if args.protocol == "paper"
-           else results_dir("gc", args.model, "gccode"))
+    out = results_dir("gc", args.model)
+    if args.protocol == "gccode":
+        out = out / "gccode"
+    if args.tag:
+        out = out / args.tag
 
     if args.protocol == "gccode":
         task, max_new = "repetition_gccode", 10
@@ -58,12 +62,20 @@ def main():
     peft_model = PeftModel.from_pretrained(model, str(out / "adapter"))
     peft_model.eval()
 
+    # The gate consults the full known glitch set G, exactly as the paper and the
+    # authors' code do (membership lookup, not a learned detector).
+    all_glitch = df[df["category"] == "glitch"]["token_id"].tolist()
     results = evaluate(peft_model, tok, split["train_ids"], split["heldout_ids"],
-                       normal_sample, batch, max_new, task, correct_fn)
+                       normal_sample, batch, max_new, task, correct_fn,
+                       glitch_ids_for_gate=all_glitch if gc["eval"].get("gated", True) else None)
 
-    print(f"\ntrain-split repair rate:   {results['train_repair_rate']:.3f}  (paper population)")
-    print(f"HELD-OUT repair rate:      {results['heldout_repair_rate']:.3f}  (the honest number)")
-    print(f"normal ok w/ adapter on:   {results['normal_ok_rate_adapter_on']:.3f}")
+    print(f"\ntrain-split repair rate:      {results['train_repair_rate']:.4f}  (paper population)")
+    print(f"HELD-OUT repair rate:         {results['heldout_repair_rate']:.4f}  (generalisation)")
+    print(f"held-out, adapter off:        {results['heldout_repair_rate_adapter_off']:.4f}  (control)")
+    print(f"normal ok, adapter forced on: {results['normal_ok_rate_adapter_forced_on']:.4f}")
+    if "normal_ok_rate_gated" in results:
+        print(f"normal ok, GATED (lambda=0):  {results['normal_ok_rate_gated']:.4f}  (the paper's actual claim)")
+        print(f"held-out repair, GATED:       {results['heldout_repair_rate_gated']:.4f}")
     save_json(run_metadata(model=args.model, config=gc, protocol=args.protocol,
                            results=results), out / "eval.json")
 

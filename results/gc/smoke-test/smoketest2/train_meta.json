@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-07-30T18:24:24",
+  "git_commit": "60c47f6",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "smoke-test",
+  "config": {
+    "seed": 0,
+    "lora": {
+      "r": 4,
+      "alpha": 4,
+      "dropout": 0.0,
+      "target": [
+        "gate",
+        "up"
+      ]
+    },
+    "holdout_fraction": 0.2,
+    "exclude_leaked_from_holdout": true,
+    "training": {
+      "epochs": 15,
+      "lr": 0.0001,
+      "batch_size": 8,
+      "gradient_accumulation": 64,
+      "weight_decay": 0.01,
+      "scheduler": "linear",
+      "warmup_ratio": 0.1,
+      "grad_clip": 1.0,
+      "max_length": 384,
+      "mask_prompt_loss": true
+    },
+    "prompt_style": "decoded",
+    "eval": {
+      "max_new_tokens": 24,
+      "gated": true
+    }
+  },
+  "protocol": "paper",
+  "prompt_style": "decoded",
+  "n_glitch_total": 167,
+  "n_train": 134,
+  "n_heldout": 32,
+  "n_heldout_dropped_leaked": 1,
+  "train_seconds": 12.976069200001803
+}
