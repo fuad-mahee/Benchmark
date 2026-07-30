@@ -132,13 +132,42 @@ $1873/0.6741 = 2778.5$ from detection, $359/0.1292 = 2778.6$ and
 $1045/0.3760 = 2779.3$ from repair. \gc{} states $2{,}539$. A repair rate is a
 fraction of this population, so the two rates are fractions of different things.
 
-\item \textbf{One reported figure is transplanted rather than measured.} \gc{}'s
-Table 2 reports \gp{} as repairing $956$ Mistral tokens at $37.65\%$. \gp{} reports
-repairing $1{,}045$ tokens at $37.60\%$. The value $956$ is what one obtains by
-applying \gp{}'s \emph{rate} to \gc{}'s \emph{denominator}
-($0.3765 \times 2539 = 955.9$). A rate transplanted onto a different population is
-presented in the position of a measured count. This is exactly the failure that
-fixing the denominator prevents.
+\item \textbf{The reported competitor counts are derived, not measured.} \gc{}
+states that ``the \gp{} results are taken from their original paper.'' The
+\emph{rates} are. The \emph{token counts} are not: for all five shared models,
+\gc{}'s reported \gp{} repaired-token count equals \gp{}'s \emph{rate} multiplied
+by \gc{}'s \emph{own} denominator, not the count \gp{} reports
+(Table~\ref{tab:rescale}). For Mistral the value $956$ does not appear anywhere in
+\gp{}'s paper, which reports $1{,}045$.
+
+\begin{table}[h]
+\centering
+\caption{\gc{}'s Table 2 reports \gp{} token counts that are \gp{}'s published
+\emph{rate} rescaled onto \gc{}'s \emph{population}, for every shared model. The
+final column reproduces the reported value to within rounding in all five cases.}
+\label{tab:rescale}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Model & \gp{}'s own count & \gc{} reports & \gc{}'s $|G|$ & \gp{} rate $\times$ \gc{} $|G|$ \\
+\midrule
+Llama-2-7b-chat          & $4{,}021$  & $2{,}968$  & $4{,}743$  & $2{,}968.2$ \\
+Gemma-2b-it              & $13{,}638$ & $14{,}548$ & $29{,}831$ & $14{,}548.6$ \\
+Mistral-7B-Instruct-v0.1 & $1{,}045$  & $956$      & $2{,}539$  & $954.7$ \\
+Qwen-7B-Chat             & $14{,}765$ & $13{,}320$ & $27{,}686$ & $13{,}319.7$ \\
+Yi-6B-Chat               & $4{,}317$  & $3{,}188$  & $5{,}985$  & $3{,}187.6$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+To be fair to the authors: the rate is carried over faithfully, and rescaling is a
+defensible way to place two rates on a common axis. Two things are nevertheless
+wrong with it as presented. The counts are labelled as taken from the original
+paper when they are computed; and the computation silently assumes that \gp{}'s
+rate transfers to a \emph{different set} of tokens. Section~\ref{sec:rq1} shows
+these are not merely different-sized populations but different token sets, so the
+assumption is substantive and untested. This is exactly the failure that fixing
+the denominator prevents.
 
 \item \textbf{Neither paper reports variance.} \gp{} depends on a random $10\%$
 vocabulary sample; \gc{} on a random adapter initialisation and batch order. Both
