@@ -70,13 +70,21 @@ the gate that makes its repair ``lossless'': the adapter is disabled unless the
 input contains a token from the set. But the set is what the probe produced, and
 \gc{}'s own published set for this model contains \texttt{and}, \texttt{for},
 \texttt{with}, \texttt{by} and the apostrophe --- so the gate opens on $57\%$ of
-ordinary sentences, and on the evaluation's own boilerplate. Losslessness is
-therefore not delivered by the mechanism the paper credits for it; \gc{}'s own
+ordinary sentences, on the evaluation's own boilerplate, and on every one of the
+$6{,}079$ examples we ran through the authors' own released adapter. Losslessness
+is therefore not delivered by the mechanism the paper credits for it; \gc{}'s own
 capability table confirms this, since a truly disabled adapter would leave those
-scores bit-identical and it does not. Separately, adding the held-out split the
-paper omits, repair falls from a claimed $94.80\%$ to $78.11\%$ on tokens the
-adapter never saw; and for \gp{}, two implementation choices the paper never
-states move its repair rate by $7.8\times$, bracketing its own published figure.
+scores bit-identical and it does not.
+
+Where the methods' own claims are testable, we report what we found rather than
+what a reproduction study is expected to find. Loading \gc{}'s released weights
+reproduces its headline repair rate to within a single token ($2{,}408$ against a
+published $2{,}407$ of $2{,}539$), and an earlier version of this study reported a
+shortfall on that claim which we now attribute to our own training rather than to
+the method. For \gp{}, whose code was never released, two implementation choices
+the paper does not state move its repair rate by $7.8\times$ --- a range that
+brackets its own published figure, leaving the claim under-determined rather than
+refuted.
 
 We subjected our own implementation to an adversarial external audit before
 reporting anything. It found two errors that invalidated specific conclusions and
@@ -1024,11 +1032,71 @@ substantially better than we previously reported; this is the one correction in
 this study that runs in the original authors' favour, and it is the reason the
 audit of Section~\ref{sec:audit} is reported rather than quietly absorbed.
 
-What remains is a real shortfall: $78.11\%$ on held-out tokens under the authors'
-own protocol against the $94.80\%$ they report for this model. Their figure is
-measured on the training population, so the comparison is between a generalisation
-estimate and a training-set estimate --- which is precisely the distinction the
-split exists to expose.
+That leaves an apparent shortfall --- $78.11\%$ held-out against a published
+$94.80\%$ --- and one obvious alternative explanation for it, namely that our
+training still differs from theirs. The next subsection removes that explanation
+rather than arguing about it.
+
+\subsubsection{The authors' own adapter, on the authors' own population}
+\label{sec:upstream}
+
+\gc{} released its trained adapters. We load the Mistral checkpoint directly,
+reproducing their \texttt{LinearWithLoRA} arithmetic
+($y = \mathrm{linear}(x) + \lambda \cdot \tfrac{\alpha}{r}\,((x A) B)$, with
+$A \in \mathbb{R}^{d \times r}$ and $B \in \mathbb{R}^{r \times d'}$ --- the
+transpose of PEFT's convention, which is why the weights are not loaded through
+PEFT) and reading rank, scaling and target layers from the checkpoint's own
+configuration block rather than ours. Their protocol throughout.
+
+\begin{table}[h]
+\centering
+\caption{\gc{}'s released adapter for \texttt{Mistral-7B-Instruct-v0.1}, evaluated
+under \Pcode{}. Every row uses their weights; the populations differ.}
+\label{tab:upstream}
+\begin{tabular}{lrrr}
+\toprule
+Population & $n$ & Repaired & Rate \\
+\midrule
+\textbf{Their published glitch list} (their denominator) & $2{,}539$ & $\mathbf{2{,}408}$ & $\mathbf{94.84\%}$ \\
+\quad \emph{their published figure} & $2{,}539$ & \emph{$2{,}407$} & \emph{$94.80\%$} \\
+\midrule
+Our \Pcode{} census & $2{,}552$ & $2{,}421$ & $94.87\%$ \\
+Our held-out set, restricted to their list & $473$ & $441$ & $93.23\%$ \\
+Glitch tokens \emph{absent} from their list & $15$ & $15$ & $100.00\%$ \\
+\midrule
+Clean tokens, gate active & $500$ & $500$ & $100.00\%$ \\
+Clean tokens, adapter forced on & $500$ & $500$ & $100.00\%$ \\
+Control: LoRA branch zeroed & $473$ & $1$ & $0.21\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The headline claim reproduces, to within one token.} \gc{} reports
+$2{,}407$ repaired of $2{,}539$; we measure $2{,}408$. The control run --- the same
+weights with the LoRA branch zeroed --- collapses to $0.21\%$, so the repair is
+coming from their parameters and not from the base model. This is a second anchor,
+independent of the census anchor of Section~\ref{sec:rq1}: our harness reproduces
+both \gc{}'s published token list and its published repair rate. Whatever else
+this study says about \gc{}, its central number is real and we could not break it.
+
+\paragraph{Our shortfall was ours.} On the $473$ tokens our own adapter held out,
+their adapter scores $93.23\%$ where ours scored $78.11\%$ --- same tokens, same
+prompt, same decoding, same harness. The $15$-point difference is therefore a
+property of the adapter, which means of our training run. We withdraw the
+$78.11\%$-versus-$94.80\%$ comparison as a statement about the method. It is a
+statement about our replication of the method's training, and reporting it as the
+former would be exactly the error this study criticises elsewhere.
+
+\paragraph{What this cannot settle.} Their adapter trained on their entire
+published list, so the $473$-token row is a \emph{training-set} number for them
+and says nothing about generalisation. The only genuinely unseen population
+available is the $15$ tokens our census finds glitchy that are absent from their
+list; their adapter repairs all $15$. That is a positive signal at $n = 15$ and
+nothing stronger. Whether \gc{} generalises to unseen glitch tokens therefore
+remains open: our held-out experiment is the right design for it, and the adapter
+it currently uses is not good enough for the answer to be worth quoting. This is
+the clearest remaining piece of work in this study, and it is a few minutes of
+training.
 
 \paragraph{The gate does not close, and this defeats the losslessness claim.}
 \gc{}'s central design claim is that repair is \emph{lossless by construction}:
@@ -1064,6 +1132,10 @@ by construction, not by coincidence. Only the \Ppaper{} row measures a closed
 gate, and it does so because \emph{our} stricter census happens to exclude
 \texttt{and} and the apostrophe --- an accident of our probe, not a property of
 the method.
+\item \textbf{It never closed for the authors' own adapter either.} Across all
+$6{,}079$ examples of Section~\ref{sec:upstream} --- their weights, their
+published $G$, their template, their membership rule --- the gate closed
+\emph{zero} times. So this is not a property of our reimplementation.
 \end{itemize}
 
 The consequence for the paper is specific and, we think, the most decision-relevant
@@ -1267,14 +1339,17 @@ sentence written about it, which is a different and less glamorous discipline.
 \section{Conclusion}
 % =====================================================================
 
-\paragraph{For a reader deciding what to believe.} \gc{} repairs a substantial
-fraction of glitch tokens, including ones it never trained on ($78.11\%$ held-out
-under its own protocol), and that is a real result which our initial evaluation
-understated. \gp{}'s repair mechanism works but weakly, and its published
-configuration cannot be reconstructed. Of the two headline numbers,
-\gc{}'s $94.80\%$ is measured on its training population and \gp{}'s $37.60\%$
-comes from a calibration the paper does not disclose; neither should be read as
-the rate a deployment would see.
+\paragraph{For a reader deciding what to believe.} \gc{}'s headline repair rate is
+real: loading the authors' own released adapter reproduces it to within one token
+($2{,}408$ against $2{,}407$ of $2{,}539$). We tried twice to find a shortfall in
+it --- first through a memorisation argument, then through a held-out comparison
+--- and both times the shortfall turned out to be in our replication of their
+training rather than in their claim. It is measured on the training population,
+which still means it is not a generalisation estimate, and the one small unseen
+population we could construct ($n = 15$) is too small to settle that. \gp{}'s
+repair mechanism works but weakly, and its published configuration cannot be
+reconstructed at all; its $37.60\%$ comes from a calibration the paper does not
+disclose, and its $12.92\%$ baseline is under-determined by its own description.
 
 \paragraph{For a reader deciding what to deploy.} Three things bound what either
 method delivers, and none is visible from the papers. First, coverage is bounded
@@ -1292,12 +1367,27 @@ $2.5\times$ difference in that set is attainable by wording alone.
 
 \paragraph{What we could not settle.} \gp{}'s adaptive calibration is
 unrecoverable from its paper, so its principal claim can be neither reproduced nor
-refuted --- only reported as unreconstructable. \gp{}'s fixed-value baseline is
+refuted --- only reported as unreconstructable. Its fixed-value baseline is
 under-determined by its own description, our four defensible readings spanning
-$2.23$--$17.41\%$ around its published $12.92\%$. And our own inference-speed
+$2.23$--$17.41\%$ around its published $12.92\%$. Whether \gc{} generalises to
+unseen glitch tokens is still open: the design that answers it is ours, but the
+adapter we trained is not good enough for its answer to be worth quoting, and the
+authors' adapter has seen every token on their list. And our own inference-speed
 measurement was withdrawn rather than published. These are stated as open, because
 a reproduction study that converts every gap into a negative finding is not
 measuring the methods --- it is measuring its own confidence.
+
+\paragraph{A closing note on direction.} Of the substantive corrections this study
+made to its own earlier drafts, most moved \emph{in the original authors' favour}:
+the memorisation gap, the held-out shortfall, the losslessness measurement, the
+inference-speed penalty, and the claim that \gp{}'s calibration gain was
+unattainable. What survived in the other direction is narrower and more specific
+--- the census is a property of the probe, the competitor counts are rescaled
+rather than quoted, \gp{}'s repair is under-specified to the point of being
+unfalsifiable, and \gc{}'s losslessness is credited to the wrong mechanism. We
+think that asymmetry is the most useful thing to report about how reproduction
+studies go wrong: the easy failure mode is not missing an error, it is finding
+one that is your own and publishing it as theirs.
 
 % =====================================================================
 \appendix

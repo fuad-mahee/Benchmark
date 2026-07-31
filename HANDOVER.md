@@ -196,9 +196,32 @@ identity-constant run (1.01%) is *degenerate* (pins α≈1 = no intervention) an
 An earlier version of this study reported a 15–26 point "memorisation gap." **That
 was mostly our own broken training** (3 epochs instead of 15, wrong LR, unseeded,
 dropped gradients). With the authors' own hyperparameters the gap is 4.85 points,
-and under the paper protocol held-out *exceeds* train. GlitchCleaner generalises
-much better than we previously reported. What remains: 78.11% held-out vs the
-claimed 94.80%.
+and under the paper protocol held-out *exceeds* train.
+
+⚠ **The 78.11%-vs-94.80% shortfall is also ours — see RUNLOG V6/V7.** Loading
+GlitchCleaner's **own released adapter** (`LoRA-Parameter/Mistral-7B-Instruct-v0.1.pt`)
+reproduces their headline exactly: **2,408 repaired of 2,539 = 94.84%** against
+their published 2,407 / 94.80% — one token. On the *same* 473 tokens where our
+adapter scored 78.11%, theirs scores **93.23%**. So the gap is our training, not
+their claim, and must not be reported as a reproduction failure.
+Artefact: `results/gc_upstream/mistral-7b-instruct-v01/gccode/eval.json`.
+
+**RQ4 — GlitchCleaner's own adapter (new, `run_gc_upstream_eval.py`)**
+
+| population | n | repaired | rate |
+|---|---|---|---|
+| their published list (their denominator) | 2,539 | **2,408** | **94.84%** (claim: 2,407 / 94.80%) |
+| our gccode census | 2,552 | 2,421 | 94.87% |
+| our held-out, restricted to their list | 473 | 441 | 93.23% |
+| glitch tokens **absent** from their list (never trained on) | 15 | 15 | 100.00% |
+| clean tokens, gate active / forced on | 500 | 500 / 500 | 100.0% / 100.0% |
+| control: LoRA branch zeroed | 473 | 1 | 0.21% |
+
+Caveat: their adapter trained on their whole list, so the 473-token row is a
+*training-set* number for them. The only genuinely unseen population is the 15
+tokens absent from their list. **Whether GC generalises is still open** — our
+held-out design is the right one, but our adapter is too weak for its answer to
+be worth quoting. Retraining it properly is the clearest remaining task.
 
 ⚠ **The losslessness column is NOT what it looks like — see RUNLOG V1.** Under the
 gccode protocol the gate never closed: `eval.json` records
@@ -333,19 +356,25 @@ write-up.
              resumeFromRunId: "wf_f5f1a561-87c"})
    ```
 
-### 6.2b MUST DO — the highest-value experiment nobody has run
+### 6.2b DONE — GlitchCleaner's own released adapter
 
-7b. **Evaluate GlitchCleaner's own released adapter.**
-   `third_party/GlitchCleaner/LoRA-Parameter/Mistral-7B-Instruct-v0.1.pt` (5.9 MB)
-   is the authors' trained weights. No experiment has touched it. Right now RQ4 is
-   the one result where "our reconstruction differs from theirs" is a live
-   alternative explanation for the 78.11%-vs-94.80% gap; loading their weights
-   removes it, and anchors RQ4 the way the census anchors RQ1. It also lets the
-   gate finding be tested on the authors' exact artefact rather than on ours.
-   Note the format is their custom `LinearWithLoRA` state dict (`w1_<layer>_A` /
-   `gate_proj_<layer>_B` style keys plus a `config` entry), not a PEFT directory,
-   so it needs a small loader — see `third_party/GlitchCleaner/GlitchCleaner.py`
-   lines ~168–210 for the key convention. ~15 min GPU once the loader exists.
+7b. ~~**Evaluate GlitchCleaner's own released adapter.**~~ **DONE 2026-07-31.**
+   `scripts/run_gc_upstream_eval.py` + `src/glitchcleaner/upstream_adapter.py`.
+   Results in §4 above and RUNLOG V6–V8. Their headline reproduces to one token;
+   our held-out shortfall was our training; the gate never closed in 6,079
+   examples using their own list. Runs in ~3 min on the A6000.
+
+7c. **Retrain our GC adapter until it matches theirs, then redo the held-out test.**
+   This is now the clearest open task. Their adapter gets 93.23% on the 473 tokens
+   where ours gets 78.11%, so our held-out number is measuring our training, not
+   the method. Until ours is competitive, the generalisation question — the single
+   thing our study adds to GC's own evaluation — has no trustworthy answer.
+   Start by diffing our training against `third_party/GlitchCleaner/Fine-tuning/`
+   (the target-format and re-tokenisation asymmetry noted in
+   `docs/evidence_adjudications/upstream_code.md` D4 is a likely cause: their
+   training splices the *decoded string* and re-tokenises, while their evaluation
+   splices the *raw id*, and the id survives re-encoding in only ~60% of prompts).
+   Training is ~150 s per run, so this is cheap to iterate on.
 
 ### 6.3 SHOULD DO — extend coverage
 
@@ -424,8 +453,12 @@ Ordered by how much they'd survive a hostile reviewer.
    census: 66 promotion vs 17,201 suppression neurons out of 286,720.
 6. **GP detection recall does not reproduce** (0.404 vs claimed 0.674) even under a
    base-rate control — reported as a reproduction failure, not a refutation.
-7. **GlitchCleaner mostly generalises** (held-out 78.11%) but falls short of the
-   claimed 94.80%. Losslessness is **not** established — see finding 2.
+7. **GlitchCleaner's headline claim reproduces exactly** with the authors' own
+   released adapter: 2,408 of 2,539 = 94.84% against their published 2,407 /
+   94.80%. Two attempts of ours to find a shortfall in it (memorisation, then
+   held-out) both turned out to be our own training. Losslessness is still **not**
+   established — see finding 2 — and generalisation is still open, because their
+   adapter saw every token on their list.
 8. **Neither paper reports variance or collateral damage.** We report both.
 
 **Be careful with #6** — an earlier version of this study claimed a large

@@ -465,3 +465,61 @@ authors' own trained adapter. No experiment has used it. Evaluating their weight
 directly would anchor RQ4 the way the census anchors RQ1, and would remove the
 "our reconstruction may differ" alternative explanation from the one result where
 it currently carries the most weight.
+
+## 2026-07-31 - GLITCHCLEANER'S OWN ADAPTER EVALUATED (new; RQ4 anchor)
+
+`third_party/GlitchCleaner/LoRA-Parameter/Mistral-7B-Instruct-v0.1.pt` had never
+been used. It is now, via `scripts/run_gc_upstream_eval.py` +
+`src/glitchcleaner/upstream_adapter.py`, which reproduce their `LinearWithLoRA`
+arithmetic exactly (`y = linear(x) + flag * (alpha/rank) * ((x @ A) @ B)`, with
+A `[in, rank]` and B `[rank, out]` - the transpose of PEFT's convention, which is
+why the weights are not loaded through PEFT). Rank, scaling and target layers are
+read from the checkpoint's own `config` entry: r=4, alpha=4, layers 19-28. Their
+protocol throughout: gccode template, 10 new tokens, `lstrip` containment.
+Artefact: `results/gc_upstream/mistral-7b-instruct-v01/gccode/eval.json`
+(`git_dirty: false`, commit 3313cb3).
+
+| population | n | repaired | rate |
+|---|---|---|---|
+| **their published list (their own denominator)** | 2,539 | **2,408** | **94.84%** |
+| our gccode census | 2,552 | 2,421 | 94.87% |
+| our held-out set, restricted to their list | 473 | 441 | 93.23% |
+| glitch tokens ABSENT from their list (never trained on) | 15 | 15 | 100.00% |
+| clean tokens, gate active | 500 | 500 | 100.00% |
+| clean tokens, adapter forced on | 500 | 500 | 100.00% |
+| control: LoRA branch zeroed | 473 | 1 | 0.21% |
+
+### V6 - GlitchCleaner's headline claim REPRODUCES. Exactly.
+The paper reports **2,407** repaired of 2,539 (94.80%). We measure **2,408**
+(94.84%) - a difference of one token. The control (branch zeroed -> 0.21%)
+confirms the repair comes from their weights and not from the base model. This is
+a second anchor for \gc{}, independent of the census anchor: our harness
+reproduces both their published token list AND their published repair rate.
+
+### V7 - Our 78.11% held-out figure was OUR TRAINING, not their method.
+On the 473 tokens our own adapter held out, their adapter scores **93.23%** where
+ours scored 78.11%. Same tokens, same prompt, same decoding, same harness - so the
+15-point difference is attributable to the adapter, i.e. to our training run. The
+study must therefore NOT present 78.11%-vs-94.80% as a reproduction shortfall in
+the method. It is a shortfall in our replication of their training.
+
+Caveat, stated because it limits what this run can show: their adapter was trained
+on their whole published list, so the 473-token result is a *training-set* number
+for them and cannot speak to generalisation. The only genuinely unseen population
+available is the 15 tokens our census finds glitchy that are absent from their
+list; their adapter repairs **15/15**. That is a positive signal at n=15 and
+nothing stronger. The generalisation question is still best answered by our own
+held-out experiment, which now needs a better-trained adapter to be worth citing.
+
+### V8 - The gate finding is CONFIRMED on the authors' own artefact.
+Across all 6,079 examples in this run - including 500 clean tokens - the gate
+closed **zero** times (`gate_stats: {examples_gate_on: 6079, examples_gate_off: 0}`),
+using their published G, their template and their code's membership rule. This is
+no longer an observation about our reimplementation. Clean tokens score 100% both
+gated and forced on, which is the substantive point: their adapter genuinely does
+not damage clean inputs, but that is because the adapter is benign, not because
+the gate disabled it. "Lossless by construction" is not what is happening.
+
+Net effect on RQ4: the memorisation criticism is fully withdrawn, the reproduction
+shortfall is ours, and the surviving finding is the losslessness misattribution -
+which this run establishes on their own weights rather than on ours.
