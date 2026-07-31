@@ -14,6 +14,7 @@
 \usepackage[margin=2.4cm]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{longtable}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -685,21 +686,41 @@ from stored data. Table~\ref{tab:factorial} gives the decomposition.
 
 \begin{table}[h]
 \centering
-\caption{Sequential attribution of the $+1{,}564$ glitch-count gap between
-protocols, over the $31{,}743$ shared candidates. The ordering of factors does not
-change the result, indicating no measurable interaction among the observable
-factors.}
+\caption{Attribution of the $+1{,}564$ glitch-count gap between protocols, over the
+$31{,}743$ shared candidates. Each factor is measured with the other two held
+fixed, at \emph{both} settings of the remaining factors, because the factors turn
+out to interact: the oracle's effect changes sign depending on which prompt it is
+measured under. We therefore give a range rather than a single additive
+decomposition. Token id $3$ (\texttt{NUL}) is excluded, as it does not survive the
+CSV round trip.}
 \label{tab:factorial}
-\begin{tabular}{lrr}
+\begin{tabular}{llrr}
 \toprule
-Factor & $\Delta$ glitch & Share of gap \\
+Factor & Measured at & $\Delta$ glitch & Share of gap \\
 \midrule
-Generation budget ($24 \rightarrow 10$) & $+1$ & $0.06\%$ \\
-Match rule (\texttt{strip} vs \texttt{lstrip}) & $+14$ & $0.9\%$ \\
-\textbf{Prompt wording (residual)} & $\mathbf{+1{,}549}$ & $\mathbf{99.0\%}$ \\
+Generation budget ($24 \rightarrow 10$) & \Pcode{}, either oracle & $+2$ & $0.13\%$ \\
+\midrule
+\multirow{2}{*}{Oracle (\texttt{strip}/\texttt{token\_str} vs \texttt{lstrip}/\texttt{decode})}
+  & \Ppaper{} generations & $+14$ & $0.9\%$ \\
+  & \Pcode{} generations  & $-5$  & $-0.3\%$ \\
+\midrule
+\multirow{2}{*}{\textbf{Prompt wording}}
+  & paper oracle  & $\mathbf{+1{,}569}$ & $\mathbf{100.3\%}$ \\
+  & gccode oracle & $\mathbf{+1{,}550}$ & $\mathbf{99.1\%}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+Two things should be said plainly about this table. First, unlike our earlier
+sequential decomposition, prompt wording here is \emph{measured}, not a residual:
+it is the difference between two censuses that share an oracle and a budget and
+differ only in the template. Second, an earlier version of this table asserted
+that the ordering of factors did not matter and that there was therefore no
+measurable interaction. That was wrong, and our own archived cells refute it: the
+oracle contributes $+14$ tokens under the paper prompt and $-5$ under \gc{}'s, so
+the effects are not additive. The conclusion is unchanged and is if anything more
+robust --- wording accounts for $99$--$100\%$ of the gap on either measurement path
+--- but the no-interaction claim is withdrawn.
 
 \paragraph{The mechanism.} The prompt effect is not mysterious. Scoring both
 protocols with the same predicate over the same $31{,}743$ candidates: generations

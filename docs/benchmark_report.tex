@@ -1,0 +1,1222 @@
+% =====================================================================
+%  BENCHMARK REPORT -- glitch-token mitigation, independent evaluation
+%
+%  PURPOSE: source text for a larger report, in which this is one part.
+%
+%  HOW TO USE IT
+%  -------------
+%  (a) Standalone: compile as-is with pdflatex (twice, for \ref).
+%  (b) As a sub-part: delete everything between BEGIN/END PREAMBLE below,
+%      delete \begin{document}/\end{document} and the \maketitle block, then
+%      \input{} this file. Top level is \section, so it nests under a
+%      \chapter or \part without renumbering. The macros in the preamble
+%      (\gp, \gc, \Ppaper, \Pcode, \Neunup, \Neundown) are used throughout
+%      and must be copied across.
+%
+%  EVERY NUMBER is traceable. Section~\ref{sec:provenance} maps each one to a
+%  file under results/ or to a page of one of the two papers. Quantities that
+%  are derived rather than read (sums, set operations, re-scorings) are
+%  recomputed by scripts/verify_claims.py.
+%
+%  Numbers in this document are for Mistral-7B-Instruct-v0.1 unless stated.
+% =====================================================================
+
+% ---------------------------------------------------- BEGIN PREAMBLE
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+
+\newcommand{\gp}{\textsc{GlitchProber}}
+\newcommand{\gc}{\textsc{GlitchCleaner}}
+\newcommand{\Ppaper}{$P_{\mathrm{paper}}$}
+\newcommand{\Pcode}{$P_{\mathrm{code}}$}
+\newcommand{\Neunup}{\ensuremath{\mathit{Neun}_{\uparrow}}}
+\newcommand{\Neundown}{\ensuremath{\mathit{Neun}_{\downarrow}}}
+
+\title{\textbf{Independent Evaluation of Two Glitch-Token Mitigation Methods}\\[0.3em]
+\large \gp{} (ASE 2024) and \gc{} (AAAI 2026)}
+\author{Benchmark report}
+\date{}
+\begin{document}
+\maketitle
+{\small\tableofcontents}
+% ---------------------------------------------------- END PREAMBLE
+
+% =====================================================================
+\section{Summary}
+\label{sec:summary}
+% =====================================================================
+
+Two published methods claim to detect and repair \emph{glitch tokens} ---
+vocabulary entries so under-trained that the model produces garbage when they
+appear in a prompt. \gp{} reports an average repair rate of $50.06\%$; \gc{}
+reports $86.88\%$ and positions itself as a more-than-30-point improvement. This
+part of the report re-executes both under one controlled protocol on
+\texttt{Mistral-7B-Instruct-v0.1}, a model both papers use, regenerating every
+quantity rather than citing published values.
+
+Five findings, ordered by how well they are supported.
+
+\begin{enumerate}[leftmargin=*]
+
+\item \textbf{The glitch-token population is a property of the probe, not the
+model.} Holding model, decoding and vocabulary filter fixed, the same model has
+$988$ glitch tokens under the prompt the papers describe and $2{,}552$ under the
+prompt \gc{}'s released code actually uses. Isolating the factors, $99$--$100\%$
+of that gap is the prompt \emph{wording}; the generation budget accounts for
+$0.13\%$ and the correctness oracle for under $1\%$
+(Section~\ref{sec:rq1}). Since a repair rate is a fraction of this population,
+every published repair rate in this literature is a fraction of a
+protocol-dependent denominator.
+
+\item \textbf{That population is also a deployed component, and it breaks \gc{}'s
+central design claim.} \gc{} consults the glitch set $G$ at inference time as the
+gate that makes repair ``lossless'': the adapter is disabled unless the input
+contains a token from $G$. But \gc{}'s own published $G$ for this model contains
+\texttt{and}, \texttt{for}, \texttt{with}, \texttt{by}, \texttt{because},
+\texttt{using} and the apostrophe. Measured, the gate opens on $57.4\%$ of
+ordinary English sentences, on the repair evaluation's own boilerplate, and on
+all $6{,}079$ examples we ran through the authors' released adapter --- it never
+once closed. Losslessness is real but is not produced by the mechanism the paper
+credits (Section~\ref{sec:gate}).
+
+\item \textbf{\gc{}'s headline repair rate reproduces exactly.} Loading the
+authors' own released adapter and evaluating on their own published token list
+gives $2{,}408$ repaired of $2{,}539$ ($94.84\%$) against their reported $2{,}407$
+($94.80\%$) --- a difference of one token (Section~\ref{sec:upstream}).
+
+\item \textbf{\gp{}'s repair is under-determined by its own description.} Two
+implementation choices the paper never states --- which tensor is adjusted, and
+at which sequence positions --- move the repair rate by $7.8\times$, from
+$2.23\%$ to $17.41\%$. The paper's own published figure for that configuration,
+$12.92\%$, lies inside this range, so it can be neither confirmed nor refuted
+(Section~\ref{sec:rq3}). Its adaptive calibration cannot be reconstructed at all:
+four constants are never given.
+
+\item \textbf{\gc{}'s reported competitor figures are rescaled, not quoted.}
+\gc{} states the \gp{} results are ``taken from their original paper.'' The rates
+are; the token counts are \gp{}'s \emph{rate} multiplied by \gc{}'s \emph{own}
+denominator, for all five shared models (Section~\ref{sec:rescale}).
+
+\end{enumerate}
+
+\paragraph{On direction of error.} Most corrections this evaluation made were to
+its own earlier conclusions, and most ran in the original authors' favour --- a
+claimed memorisation gap, a claimed held-out shortfall, a claimed losslessness
+failure, and claimed inference-speed penalties were all withdrawn after being
+traced to defects in our replication rather than in the methods
+(Section~\ref{sec:selfcorrection}). This is reported because it is the
+characteristic failure mode of reproduction work: not missing an error, but
+finding one that is your own and publishing it as someone else's.
+
+% =====================================================================
+\section{Background}
+% =====================================================================
+
+\subsection{Glitch tokens}
+
+A language model reads \emph{tokens} from a fixed vocabulary fitted before
+training. Some occur almost never in the training corpus; their embeddings are
+barely updated from initialisation, and the model has no coherent representation
+of what they mean. When such a token appears in a prompt the model's behaviour
+degrades in ways that look like malfunction rather than ordinary error: asked to
+repeat a string, it returns a different one; asked for a string's length, it
+returns an unrelated number.
+
+They matter twice over. As a reliability problem, a user who pastes text
+containing one receives nonsense with no warning. As a security problem, they
+occupy a region of representation space the model never learned to control, and
+have been used as a lever for prompt injection and jailbreak attacks.
+
+Both papers define a glitch token \emph{operationally}, by the same test: prompt
+the model to repeat the token verbatim at temperature $0$; if it fails, the token
+is glitchy. This evaluation adopts the same definition but applies it
+exhaustively to the whole vocabulary, so the result is a census rather than an
+estimate.
+
+\subsection{The two methods}
+
+\paragraph{\gp{} (Zhang et al., ASE 2024) --- detection and repair.}
+Detection reads the model's internals: label a random $10\%$ of the vocabulary by
+brute force, extract activation features for those tokens from a band of late
+transformer layers, reduce with PCA, fit a support-vector classifier, apply it to
+the remaining $90\%$, and re-validate every predicted positive with the
+brute-force test. Repair edits activations at inference time: neurons reliably
+active for normal tokens but under-active for a glitch token are amplified by a
+factor $\beta$; neurons reliably silent for normal tokens but abnormally firing
+are suppressed by a factor $\alpha$. No weights change. \textbf{No code was
+released.}
+
+\paragraph{\gc{} (Fan, Li \& Li, AAAI 2026) --- repair only.}
+Attaches LoRA adapters ($<0.1\%$ additional parameters) to the MLP gate and data
+projections of the same layer band and trains them on (glitch token
+$\rightarrow$ correct answer) pairs. The adapters are \emph{gated}: a switch
+$\lambda$ enables the branch only when the input contains a token from a known
+glitch set $G$, so clean inputs are --- in the paper's account --- processed by
+the mathematically unmodified base model. This gate is the basis of the paper's
+``lossless'' claim. \textbf{Code, trained adapters and glitch-token lists were
+released}, and are used here as the specification of record.
+
+% =====================================================================
+\section{Why these claims required verification}
+\label{sec:why}
+% =====================================================================
+
+Four problems are visible in the published material \emph{before} any experiment
+is run.
+
+\subsection{The comparison spans incompatible populations}
+
+\gc{}'s headline is a comparison against \gp{}, but the two papers worked with
+different glitch-token sets for the same model. For
+\texttt{Mistral-7B-Instruct-v0.1}, \gp{}'s tables imply a population of $2{,}779$
+tokens; five independent derivations from its own numbers agree:
+$1873/0.6741 = 2778.5$ and $1288/0.4635 = 2778.8$ and $1233/0.4437 = 2779.0$ from
+detection, $359/0.1292 = 2778.6$ and $1045/0.3760 = 2779.3$ from repair. \gc{}
+states $2{,}539$. A repair rate is a fraction of this population, so the two rates
+are fractions of different things.
+
+The disagreement is not specific to this model. Across the five shared models,
+\gp{}'s implied population and \gc{}'s stated population differ by $7\%$ to
+$35\%$, and Mistral's $9\%$ is the second smallest.
+
+\subsection{The reported competitor counts are derived, not measured}
+\label{sec:rescale}
+
+\gc{} states that ``the \gp{} results are taken from their original paper.'' The
+\emph{rates} are. The \emph{token counts} are not: for all five shared models,
+\gc{}'s reported \gp{} repaired-token count equals \gp{}'s \emph{rate} multiplied
+by \gc{}'s \emph{own} denominator, not the count \gp{} reports
+(Table~\ref{tab:rescale}).
+
+\begin{table}[h]
+\centering
+\caption{\gc{}'s Table 2 reports \gp{} token counts that are \gp{}'s published
+\emph{rate} rescaled onto \gc{}'s \emph{population}. Four of five reproduce to
+within $0.6$ of a token; Mistral is off by $1.3$, which the printed two-decimal
+rate does not explain. The last two columns are independent corroboration.}
+\label{tab:rescale}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & \gp{}'s count & \gc{} reports & \gc{}'s $|G|$ & \gp{} rate $\times$ \gc{} $|G|$ & \gp{}'s rate & \gc{}'s rate \\
+\midrule
+Llama-2-7b-chat          & $4{,}021$  & $2{,}968$  & $4{,}743$  & $2{,}968.2$  & $62.58\%$ & $62.58\%$ \\
+Gemma-2b-it              & $13{,}638$ & $14{,}548$ & $29{,}831$ & $14{,}548.6$ & $48.77\%$ & $48.77\%$ \\
+Mistral-7B-Instruct-v0.1 & $1{,}045$  & $956$      & $2{,}539$  & $954.7$      & $37.60\%$ & $\mathbf{37.65\%}$ \\
+Qwen-7B-Chat             & $14{,}765$ & $13{,}320$ & $27{,}686$ & $13{,}319.7$ & $48.11\%$ & $48.11\%$ \\
+Yi-6B-Chat               & $4{,}317$  & $3{,}188$  & $5{,}985$  & $3{,}187.6$  & $53.26\%$ & $\mathbf{53.27\%}$ \\
+\midrule
+Average                  &            &            &            &              & $50.06\%$ & $\mathbf{50.08\%}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The two boldface disagreements are small but hard to explain any other way. Had
+\gc{} quoted \gp{}'s rates, its rates would equal \gp{}'s in all five rows. They
+do not, and the rows where they differ are exactly the rows where the rescaled
+count required rounding: $956/2539 = 37.65\%$ and $3188/5985 = 53.27\%$. The
+reported average for the \gp{} column follows the same pattern --- $50.08\%$, the
+mean of the five \emph{recomputed} rates, against \gp{}'s own published $50.06\%$.
+The counts were produced first and the rates derived from them.
+
+To be fair to the authors: the rate is carried over faithfully, and rescaling is
+a defensible way to place two rates on a common axis. Two things are nevertheless
+wrong with it as presented. The counts are labelled as taken from the original
+paper when they are computed; and the computation silently assumes \gp{}'s rate
+transfers to a \emph{different set} of tokens. Section~\ref{sec:rq1} shows these
+are not merely different-sized populations but different token sets, so the
+assumption is substantive and untested.
+
+\subsection{Neither paper reports variance}
+
+\gp{} depends on a random $10\%$ vocabulary sample; \gc{} on a random adapter
+initialisation and batch order. Both report single numbers. Without a spread
+there is no way to distinguish a real difference from run-to-run noise --- and
+Section~\ref{sec:rq2} shows the spread is large.
+
+\subsection{\gc{} evaluates on its training data}
+
+The paper builds a dataset from the identified glitch tokens, trains the adapters
+on it, and reports repair over the glitch tokens. No held-out split is described.
+If the training and evaluation populations coincide, the headline number contains
+memorisation. Adding that split is the main addition this evaluation makes to
+\gc{}'s own design.
+
+% =====================================================================
+\section{Method}
+% =====================================================================
+
+\subsection{Subject model and environment}
+
+All experiments use \texttt{Mistral-7B-Instruct-v0.1}: both papers use it, it is
+where the papers disagree most sharply, and it is ungated, so any reader can
+reproduce this without access approvals. Single NVIDIA RTX A6000 (48\,GB), fp16,
+native Windows, PyTorch 2.6 / CUDA 12.4. The original papers used $2\times$A100
+(\gp{}) and an H200 (\gc{}'s speed table), so absolute wall-clock times are not
+comparable and are never compared.
+
+Restricting to one model is a deliberate depth-for-breadth trade. Every claim
+below is a claim about this model; the infrastructure is model-agnostic.
+
+\subsection{The census}
+
+Some vocabulary entries cannot meaningfully be tested and are excluded first,
+following Land \& Bartolo (2024), whom both papers adopt: control tokens; tokens
+that do not decode to valid text; and \emph{unreachable} tokens, whose decoded
+string re-encodes to a different id and which therefore can never arise from real
+input.
+
+The reachability test is subtler than it appears, and our first implementation
+got it wrong instructively. A naive decode-then-re-encode check classified
+$12{,}385$ tokens ($39\%$ of the vocabulary) as unreachable, because SentencePiece
+attaches leading-space semantics to a string in isolation that it does not attach
+in context. The correct procedure --- taken from \gc{}'s own released filter ---
+performs the round trip behind a fixed one-token prefix, testing the token in
+context. This yields $257$ filtered tokens, matching the scale both papers
+report. The filtering step is load-bearing, and a plausible implementation of it
+is off by two orders of magnitude.
+
+The token under test is inserted as its \emph{raw vocabulary id}, spliced between
+two pre-tokenised template halves, rather than by string concatenation followed
+by re-tokenisation. This guarantees the model receives exactly the token being
+tested and makes every prompt the same length, permitting exact batching.
+
+\subsection{Two protocols, and why both are necessary}
+\label{sec:protocols}
+
+While implementing the census we found that \textbf{\gc{}'s released code does not
+use the prompt its paper describes}. Two protocols therefore exist and both are
+implemented.
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+& \Ppaper{} & \Pcode{} \\
+\midrule
+Template & as written in the papers & \gc{}'s released code verbatim \\
+Generation budget & $24$ tokens & $10$ tokens \\
+Target string & \texttt{convert\_tokens\_to\_string} & \texttt{decode} \\
+Match rule & \texttt{target.strip() in output} & \texttt{target.lstrip() in output} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\Pcode{} exists so our numbers can be \emph{anchored} to the authors' published
+artefacts; \Ppaper{} exists because it is what a reader of the paper would
+implement. Reporting both is what separates ``the method behaves differently than
+claimed'' from ``we probed it differently.'' The $24$-token budget for \Ppaper{}
+is our choice --- neither paper specifies one --- and Section~\ref{sec:rq1} shows
+the choice is immaterial.
+
+\subsection{Reimplementation of \gp{}}
+\label{sec:gp-reimpl}
+
+With no public code, \gp{} was reconstructed from Algorithm 1 (detection),
+Algorithm 2 (repair), Equations 7--12 and its stated hyperparameters:
+$\gamma = 0.1$ sampling rate, $P = 75$ PCA components, polynomial SVM with $C=1$
+and degree $3$, threshold $m=1$, key layers $19$--$28$. (The paper states that
+layer band for Llama-2; we apply it to Mistral, which the paper does not
+specify.)
+
+Three aspects are \emph{under-specified in the paper} and required a choice on
+our part. All three are recorded, and two are measured rather than assumed.
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Which tensor is adjusted.} The gated MLP computes a gate signal
+$\sigma(Z_1)$ and a data signal $Z_2$ and multiplies them. The paper's Figure 5
+shows a ``Modified MLP gate'' \emph{and} a ``Modified MLP data'', i.e.\ the two
+are adjusted separately before multiplication; we follow that reading and report
+adjusting the product as an ablation.
+\item \textbf{Which sequence positions are affected.} The paper never states the
+position at which activations are read or the correction applied. We default to
+the position of the token under test, which matches ``the activation states of
+glitch tokens''; on this reading the correction fires only during prefill, since
+that is the only pass in which the token is present. The alternative --- correct
+at the last position of every forward pass, so the correction continues to fire
+at each decoding step after the glitch token has been consumed --- is reported as
+an ablation and labelled ``all positions''.
+\item \textbf{The adaptive constants.} Equations 11--12 define
+$\beta = k_1\Delta_\uparrow + b_1$ and $\alpha = k_2\Delta_\downarrow + b_2$, but
+$k_1, b_1, k_2, b_2$ are never given; the ``adaptive process'' said to derive
+them is never described; the ``range restriction'' is unspecified; and the ``set
+of default values'' the text says is provided does not appear. We use identity
+constants ($k_1 = k_2 = 1$, $b_1 = b_2 = 0$) with a clamp at $\alpha_{\min} = 1$.
+This is \emph{our} choice and a degenerate one --- it pins $\alpha \approx 1$,
+which Section~\ref{sec:rq3} independently identifies as the null-intervention
+regime --- which is why the mechanism is evaluated by parameter sweep instead.
+\end{enumerate}
+
+\subsection{Reimplementation of \gc{}}
+
+\gc{} released code, treated as the specification of record wherever the paper is
+ambiguous. Our implementation matches it on LoRA rank $4$ and scaling $4$;
+adapters on the MLP gate and data projections of layers $19$--$28$ only; frozen
+base weights; loss on the answer span only; and the authors' exact target format
+(the decoded token, unstripped, in single quotes). We adopt their optimisation
+settings --- $15$ epochs, learning rate $1\times 10^{-4}$, effective batch $512$
+(as $8 \times 64$ accumulation rather than their $64 \times 8$, to fit one
+A6000), linear schedule with $10\%$ warmup, gradient clipping at $1.0$ --- so
+that a hyperparameter mismatch cannot be offered as an explanation for any
+difference in outcome.
+
+\paragraph{The gate.} $\lambda$ is implemented as the paper and the authors' code
+define it: a per-example flag, $1$ when the input contains a token from $G$ and
+$0$ otherwise, multiplying the LoRA branch's contribution. The branch is still
+\emph{computed} when $\lambda = 0$ --- true of the authors' implementation as
+well --- so the gate removes the behavioural effect but not the arithmetic cost.
+
+\paragraph{The held-out split (our addition).} The glitch set is split $80/20$,
+the adapter trained on the $80\%$, and both halves evaluated. This separates two
+things the paper's design conflates: repairing glitch tokens in general, and
+memorising the specific ones shown during training.
+
+\paragraph{Leakage control.} A token is only ``unseen'' if the adapter never
+encountered its id. An id can appear inside a training \emph{sequence} without
+being that sequence's subject. We scan every training sequence and exclude from
+the held-out set any token whose id appears in one: $10$ of $197$ under
+\Ppaper{}, $35$ of $510$ under \Pcode{}.
+
+\subsection{Metrics, and the three denominators}
+\label{sec:denominators}
+
+Ambiguity about denominators is the specific defect this evaluation exists to
+correct, so three are named here and every rate below says which it uses.
+
+\begin{center}
+\begin{tabular}{llp{7.6cm}}
+\toprule
+Name & Size (\Ppaper{}) & Used for \\
+\midrule
+census      & $988$ & the population itself; the denominator of \gp{}'s and \gc{}'s published rates \\
+eval half   & $494$ & \gp{} repair. The census is split in two: one half fits the adaptive $\alpha,\beta$, both variants are scored on the other, so the comparison is not stacked in the adaptive variant's favour \\
+grid sample & $500$ & each cell of the $\alpha \times \beta$ grid and the $m$-sweep, drawn from the census \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The eval half and the grid sample are different draws, so the same
+configuration can differ slightly between tables: at $(\alpha,\beta) = (4, 1.5)$
+we measure $6.48\%$ ($32/494$) and $6.80\%$ ($34/500$). That $0.3$-point
+difference is the sampling noise floor for every contrast in
+Section~\ref{sec:rq3}. \gc{}'s rates use its own split sizes.
+
+\[
+\text{repair rate} = \frac{\#\{\text{glitch tokens repeating correctly with the method active}\}}{|\text{stated population}|},\quad
+\text{collateral} = \frac{\#\{\text{normal tokens broken}\}}{|\text{sampled normal tokens}|}
+\]
+
+Collateral breakage deserves comment: \emph{neither paper reports it}. A method
+that repairs glitch tokens by degrading normal ones is not obviously an
+improvement, and the quantity is cheap to measure.
+
+% =====================================================================
+\section{RQ1 --- The population is a property of the probe}
+\label{sec:rq1}
+% =====================================================================
+
+\begin{table}[h]
+\centering
+\caption{Full-vocabulary census ($|V| = 32{,}000$). Filtering is
+protocol-independent; the glitch/normal split is not. The candidate sets are
+byte-identical between columns: $31{,}743$ shared ids, none exclusive to either
+side.}
+\label{tab:census}
+\begin{tabular}{lrr}
+\toprule
+& \Ppaper{} & \Pcode{} \\
+\midrule
+Normal            & $30{,}755$ & $29{,}191$ \\
+\textbf{Glitch}   & $\mathbf{988}$ & $\mathbf{2{,}552}$ \\
+Unreachable       & $253$ & $253$ \\
+Special           & $3$ & $3$ \\
+Undecodable       & $1$ & $1$ \\
+\midrule
+Total             & $32{,}000$ & $32{,}000$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Anchoring.} Under \Pcode{} we recover $2{,}537$ of \gc{}'s $2{,}539$
+published glitch tokens (Jaccard $0.9933$), with $15$ additional tokens of our
+own. Our census machinery therefore reproduces the authors' published artefact
+essentially exactly when run under their conditions, so the difference between
+the columns of Table~\ref{tab:census} cannot be attributed to a defect in our
+implementation. This anchor is what makes the rest of the section informative
+rather than merely different.
+
+\paragraph{Three populations disagree for one model.} There are now three
+published or measured populations: $2{,}779$ (implied by \gp{}), $2{,}539$
+(\gc{}), and ours at $988$ (\Ppaper{}) or $2{,}552$ (\Pcode{}). The first two
+differ by $9\%$ while ostensibly measuring the same property of the same model.
+
+\paragraph{Decomposing the gap.} Because the raw generations were retained, the
+attribution can be settled by measurement rather than argument: greedy decoding
+makes prefix truncation an exact simulation of a shorter budget, and either
+oracle can be re-applied offline.
+
+\begin{table}[h]
+\centering
+\caption{Attribution of the $+1{,}564$ gap, over the $31{,}743$ shared candidates.
+Each factor is measured with the other two held fixed, at \emph{both} settings of
+the remaining factors, because the factors interact. Token id $3$ (\texttt{NUL})
+is excluded; it does not survive the CSV round trip.}
+\label{tab:factorial}
+\begin{tabular}{llrr}
+\toprule
+Factor & Measured at & $\Delta$ glitch & Share of gap \\
+\midrule
+Generation budget ($24 \rightarrow 10$) & either oracle & $+2$ & $0.13\%$ \\
+\midrule
+\multirow{2}{*}{Oracle (target derivation + match rule)}
+  & \Ppaper{} generations & $+14$ & $0.90\%$ \\
+  & \Pcode{} generations  & $-5$  & $-0.32\%$ \\
+\midrule
+\multirow{2}{*}{\textbf{Prompt wording}}
+  & paper oracle  & $\mathbf{+1{,}569}$ & $\mathbf{100.3\%}$ \\
+  & gccode oracle & $\mathbf{+1{,}550}$ & $\mathbf{99.1\%}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two things should be said plainly. First, prompt wording here is \emph{measured},
+not a residual: it is the difference between two censuses that share an oracle
+and a budget and differ only in the template. Second, the factors interact --- the
+oracle contributes $+14$ tokens under one prompt and $-5$ under the other --- so a
+single additive decomposition would be misleading, and the range is reported
+instead. The conclusion is unchanged and is if anything more robust: wording
+accounts for $99$--$100\%$ of the gap on either measurement path.
+
+\paragraph{The mechanism.} Scoring both protocols with the same predicate over the
+same candidates: generations consisting of newlines only number $1{,}088$ under
+\Pcode{} and $0$ under \Ppaper{}; widening the predicate to whitespace-or-empty
+gives $1{,}115$ against $3$. Of the $2{,}552$ tokens \Pcode{} classifies as
+glitchy, $1{,}089$ ($42.7\%$) produced pure whitespace. A representative case is
+token id $304$ (target \texttt{and}): under \Ppaper{} the model emits
+\texttt{"' and '"} and stops; under \Pcode{} it emits ten newlines. This is
+consistent with the template's trailing newline placing the model in a
+newline-repetition attractor. Because three prompt edits moved together, the
+effect is attributed to the wording as a whole rather than to the trailing
+newline specifically; isolating it requires one further census.
+
+\paragraph{The disagreement is bidirectional.} $146$ tokens are glitchy under
+\Ppaper{} but normal under \Pcode{}, and $1{,}710$ the other way, so neither
+census is a subset of the other. Any statement of the form ``$N$ tokens stop
+being glitchy under protocol $X$'' must be paired with the reverse count.
+
+\paragraph{Why this matters.} If the population is set by the probe, then so is
+every published repair rate, and rates computed against different populations
+cannot be compared. This is not hypothetical: \gc{}'s comparison table
+(Section~\ref{sec:rescale}) reports a \gp{} token count that is \gp{}'s rate
+rescaled onto \gc{}'s denominator rather than a quantity \gp{} measured.
+
+% =====================================================================
+\section{RQ2 --- \gp{} detection}
+\label{sec:rq2}
+% =====================================================================
+
+\begin{table}[h]
+\centering
+\caption{\gp{} detection, scored against our census. Mean $\pm$ sample s.d.\ over
+seeds $\{0,1,2\}$. The paper's Mistral row was measured against a population of
+$2{,}779$ tokens on different hardware.}
+\label{tab:detect}
+\begin{tabular}{lcccc}
+\toprule
+& Precision & Recall & F1 & Time \\
+\midrule
+Ours, \Ppaper{} ($|G| = 988$)      & $0.997$ & $0.279 \pm 0.091$ & $0.431 \pm 0.116$ & $211$\,s \\
+Ours, \Pcode{} ($|G| = 2{,}552$)   & $0.997$ & $0.404 \pm 0.019$ & $0.575 \pm 0.019$ & $224$\,s \\
+\midrule
+\gp{} claim (Mistral)              & $1.000$ & $0.674$ & $0.805$ & $42$\,m\,$39$\,s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Recall does not reproduce, and the base rate does not account for it.}
+Under \Ppaper{} recall is $0.279$. One might suspect this is depressed because our
+stricter census makes positives rarer, giving the classifier less signal in its
+$10\%$ training sample. Re-scoring under \Pcode{}, whose base rate ($8.0\%$)
+matches the conditions the papers worked in, raises recall to $0.404$ --- so the
+base rate explains part of the gap --- but it remains far from the claimed
+$0.674$. The shortfall survives the control.
+
+Because \gp{} released no code, this is reported as a failure to reproduce from
+the published description, not as a refutation. Three seeds also bound variance
+only loosely, and the \Ppaper{} interval alone does not exclude the paper's claim
+--- it is the \Pcode{} interval that carries the inferential weight.
+
+\paragraph{Variance is substantial and is never reported.} Under \Ppaper{} recall
+across three seeds spans $0.174$--$0.335$; the only difference between those runs
+is which random $10\%$ of the vocabulary trained the classifier. The interval is
+much tighter under the higher base rate ($0.382$--$0.417$), which is itself
+informative: the method's stability depends on how many positives its sample
+happens to contain. A single reported number cannot convey this.
+
+\paragraph{On the ``$100\%$ precision'' claim.} \gp{}'s reported $100\%$ precision
+is true \emph{by construction} rather than empirically: post-validation admits a
+token to the glitch set precisely when it fails the repetition test, so any
+evaluation against that same oracle returns $100\%$ by definition. Scored against
+an independently generated census, precision is $99.7\%$ under both protocols
+($2$ and $8$ false positives across three seeds; per-seed $1,0,1$ and $3,4,1$).
+
+The residual is a measurement artefact whose provenance matters. Our census was
+generated with SDPA attention and our detection sweeps with eager attention
+(required for extracting attention patterns as features); prompts, batch size,
+dtype and decoding were otherwise identical. Under greedy decoding the two
+kernels disagree on the generated string for $0.37$--$0.42\%$ of tokens and on
+the pass/fail verdict for $0.021\%$. The divergence is systematic, not
+stochastic. \emph{This attribution is an inference from the fact that two scripts
+used different kernels; the controlled A/B has not been run.}
+
+The defensible claim is narrow and, for reproducibility, consequential: a
+``$100\%$ precision'' figure defined relative to a system's own oracle does not
+survive contact with an independently produced ground truth, and the residual is
+governed by the inference stack --- attention kernel, numerical precision,
+decoding path --- none of which either paper specifies.
+
+% =====================================================================
+\section{RQ3 --- \gp{} repair}
+\label{sec:rq3}
+% =====================================================================
+
+\subsection{The published calibration is unrecoverable}
+
+\gp{}'s adaptive adjustment (Equations 9--12) cannot be reconstructed from the
+paper. The functional form is given, but $k_1, b_1, k_2, b_2$ are never stated;
+the ``adaptive process'' said to derive them is never described; the intervals to
+which the ``range restriction'' maps $\alpha$ and $\beta$ are never given; the
+``set of default values'' the text says is provided does not appear; and no
+implementation was released. Algorithm 2 compounds this by computing $\beta$ and
+$\alpha$ from the normal sample alone, although Equations 9--10 require
+glitch-token activations, and by treating them as global scalars where
+Section 4.2.2 derives them per module. The paper's own threats-to-validity
+section concedes that ``the linear computation of $\alpha$ and $\beta$ proves
+untenable'' while still reporting the rate obtained from it.
+
+The consequence is precise: the reported $37.60\%$ for Mistral cannot be verified
+against, or reconstructed from, the paper's description. We do not claim the
+method is unimplementable --- only that the published configuration is
+unrecoverable, so any reimplementation reports \emph{its own} calibration. Our
+identity-constant result ($1.01\%$ under \Ppaper{}, $0.24\%$ under \Pcode{}) is
+therefore \textbf{not} reported as the method's performance: that configuration
+pins $\alpha \approx 1$, which the sweep below independently identifies as the
+null-intervention regime, so it measures the performance of doing nothing.
+
+\subsection{Two under-specified choices dominate the outcome}
+
+\begin{table}[h]
+\centering
+\caption{Effect of the two choices the paper leaves unspecified, at the paper's
+own $\alpha = 4$, $\beta = 1.5$, \Ppaper{}. All four cells are scored on the same
+$494$-token evaluation half. Neuron counts are totals over the
+$10 \times 2 \times 14{,}336 = 286{,}720$ candidates.}
+\label{tab:implchoice}
+\begin{tabular}{llccrr}
+\toprule
+Tensor adjusted & Positions & Repair rate & Collateral & \Neunup{} & \Neundown{} \\
+\midrule
+Separate gate/data (paper Fig.~5) & token only    & $6.48\%$ ($32/494$)  & $0.00\%$ & $66$  & $17{,}201$ \\
+Separate gate/data                & all positions & $17.41\%$ ($86/494$) & $1.20\%$ & $638$ & $161{,}152$ \\
+Product                           & token only    & $2.23\%$ ($11/494$)  & $0.00\%$ & $0$   & $45{,}353$ \\
+Product                           & all positions & $15.18\%$ ($75/494$) & $1.00\%$ & $22$  & $123{,}778$ \\
+\midrule
+\multicolumn{2}{l}{\gp{}'s claim for this configuration} & $12.92\%$ & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three things follow.
+
+\emph{The spread is $7.8\times$}, across four configurations that are all
+defensible readings of the same paper. \emph{Where} the correction is applied
+matters more than \emph{which} tensor receives it ($6.48 \rightarrow 17.41$
+against $6.48 \rightarrow 2.23$), and a reader of the paper alone cannot
+determine either.
+
+\emph{The paper's own figure falls inside our range.} \gp{} reports $12.92\%$;
+our four readings bracket it. The claim is therefore neither confirmed nor
+refuted: it is \emph{under-determined by the paper's own description}. This is a
+sharper criticism than a failure to reproduce, because it says the published
+description does not pin down its own result.
+
+\emph{Promotion is structurally starved in every reading.} The paper's key-neuron
+criterion --- active above $m = 1$ in more than $99\%$ of normal tokens --- admits
+between $0$ and $638$ neurons for $\beta$ to amplify, against $17{,}201$ to
+$161{,}152$ for $\alpha$ to suppress, out of $286{,}720$. In the reading we take
+to be the paper's, the ratio is $66 : 17{,}201$. This is a property of the
+criterion the paper specifies, not of any choice we made.
+
+\subsection{Parameter sensitivity}
+
+\begin{table}[h]
+\centering
+\caption{Marginal means over the $\alpha \times \beta$ grid ($30$ cells, $500$
+glitch tokens each, single seed, \Ppaper{}, separate streams, token position).}
+\label{tab:grid}
+\begin{tabular}{lrrrrrr}
+\toprule
+$\alpha$ & $1$ & $2$ & $4$ & $8$ & $16$ & spread \\
+mean repair & $1.23\%$ & $4.23\%$ & $6.33\%$ & $7.37\%$ & $7.30\%$ & $6.13$\,pp \\
+\midrule
+$\beta$ & $0.25$ & $0.5$ & $1.0$ & $1.5$ & $2.0$ & $4.0$ \\
+mean repair & $4.68\%$ & $4.64\%$ & $5.40\%$ & $5.60\%$ & $5.60\%$ & $5.84\%$ \\
+\bottomrule
+\multicolumn{7}{l}{\footnotesize $\beta$ marginal spread: $1.20$\,pp. Collateral
+breakage is $0.0$--$0.2\%$ in every cell.}
+\end{tabular}
+\end{table}
+
+The maximum anywhere in the grid is $7.60\%$ ($38/500$), attained at a
+\emph{three-way tie} --- $(8, 1.0)$, $(8, 4.0)$ and $(16, 1.0)$ --- which is
+itself informative: the landscape is flat enough near its top that the argmax is
+not identified at this sample size. Repair rises monotonically in $\alpha$ and
+saturates by $\alpha = 8$, above the paper's chosen $\alpha = 4$. The grid is
+single-seed at $500$ tokens per cell, so individual cell contrasts of a few
+tokens are within noise; only the marginal structure is interpreted.
+
+\paragraph{On $\beta$.} The two factors contribute unequally --- $\alpha$'s
+marginal spread is $6.13$ percentage points against $\beta$'s $1.20$ --- and
+$\beta$'s effect is largest where $\alpha$ does nothing: at $\alpha = 1$, where
+the suppression term is the identity, raising $\beta$ from $0.25$ to $4$ lifts
+repair from $1/500$ to $13/500$. That is a real effect, and it is small: the
+entire $\beta$ axis at $\alpha = 1$ moves repair by $2.4$ percentage points
+against the $6.1$ points $\alpha$ moves alone. Suppression of persistently-silent
+neurons carries the mechanism; promotion contributes materially only in the
+regime where suppression is switched off, which is not the paper's operating
+regime.
+
+\subsection{Threshold sensitivity --- the most informative result}
+\label{sec:msweep}
+
+\begin{table}[h]
+\centering
+\caption{Sensitivity to the neuron-selection threshold $m$, at $\alpha = 4$,
+$\beta = 1.5$, separate streams, token position, $500$ glitch and $500$ normal
+tokens. Neuron counts are totals over $286{,}720$ candidates.}
+\label{tab:msweep}
+\begin{tabular}{lrrrr}
+\toprule
+$m$ & \Neunup{} & \Neundown{} & Repair rate & Collateral \\
+\midrule
+$0.25$        & $376$ & $530$       & $5.0\%$ ($25/500$) & $0.2\%$ \\
+$0.5$         & $195$ & $2{,}222$   & $4.8\%$ ($24/500$) & $0.2\%$ \\
+$1.0$ (paper) & $63$  & $17{,}041$  & $6.8\%$ ($34/500$) & $0.2\%$ \\
+$2.0$         & $5$   & $150{,}755$ & $8.0\%$ ($40/500$) & $0.2\%$ \\
+$4.0$         & $1$   & $270{,}882$ & $\mathbf{12.2\%}$ ($61/500$) & $0.4\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This isolates the mechanism by an experiment the paper does not run. Repair rises
+\emph{monotonically} as the promotion set shrinks --- from $376$ neurons to a
+single one --- and is highest when $\beta$ has essentially nothing to act on.
+Promotion is not merely weak; removing almost all of it \emph{improves} the
+outcome. What the method delivers on this model is coarse suppression of
+persistently-silent neurons, and the calibrated two-factor scheme the paper
+describes is not what produces the effect.
+
+$m$ is also not a formality: moving it over a factor of $16$ changes the
+selection by three orders of magnitude and the repair rate by $2.4\times$ at
+nearly constant collateral cost. The paper's unjustified $m = 1$ is a
+consequential unstated choice of the same kind as the tensor and the position.
+
+\subsection{What cannot be concluded}
+
+An earlier version of this evaluation argued that \gp{}'s claimed calibration
+gain ($37.60/12.92 = 2.91\times$) was unattainable, reasoning from a repair rate
+at the paper's fixed values \emph{higher} than its reported $12.92\%$. That
+reasoning used a pre-correction grid in the product/all-positions configuration,
+and the corrected grid reverses its direction: at the paper's own fixed values we
+measure $6.80\%$, roughly \emph{half} what the paper reports. The inference
+collapses with its premise and is withdrawn.
+
+What survives is a statement about identifiability rather than attainability. The
+ratio cannot be tested, for a reason the paper creates: the fixed-value baseline
+it is measured against is not determined by the paper's own description --- our
+four readings span $2.23$--$17.41\%$ and the published $12.92\%$ sits inside
+them. A ratio between a number we cannot reconstruct and a number whose baseline
+is under-determined is not a quantity a reproduction can adjudicate.
+
+% =====================================================================
+\section{RQ4 --- \gc{} repair}
+\label{sec:rq4}
+% =====================================================================
+
+\subsection{Our retrained adapter}
+
+\begin{table}[h]
+\centering
+\caption{\gc{} retrained with the authors' own hyperparameters, seeded, with
+leaked ids excluded from the held-out set. Clean-input denominators are $500$
+sampled normal tokens.}
+\label{tab:gc}
+\begin{tabular}{lrrccccc}
+\toprule
+& \multicolumn{2}{c}{split} & \multicolumn{3}{c}{glitch tokens} & \multicolumn{2}{c}{clean tokens} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}\cmidrule(lr){7-8}
+Protocol & train & held-out & train & \textbf{held-out} & adapter off & gated & forced on \\
+\midrule
+\Ppaper{} & $791$     & $187$ & $35.15\%$ & $\mathbf{37.43\%}$ & $0.00\%$ & $100.0\%$ & $99.6\%$ \\
+\Pcode{}  & $2{,}042$ & $475$ & $82.96\%$ & $\mathbf{78.11\%}$ & $0.00\%$ & $99.6\%^{\ddagger}$ & $99.6\%$ \\
+\bottomrule
+\multicolumn{8}{l}{\footnotesize $^{\ddagger}$ \emph{not} a gate measurement --- see
+Section~\ref{sec:gate}.}
+\end{tabular}
+\end{table}
+
+The adapter-off control at $0.00\%$ confirms all repair comes from the LoRA. An
+earlier version of this evaluation reported a $15$--$26$ point ``memorisation
+gap'' from a run that used ad-hoc hyperparameters, an always-on adapter, unseeded
+training and an unfiltered held-out set. With the authors' own hyperparameters
+the gap is $4.85$ points under \Pcode{}, and under \Ppaper{} held-out
+\emph{exceeds} train. Most of what had been attributed to \gc{} was our own
+under-trained adapter.
+
+That leaves an apparent shortfall --- $78.11\%$ against a published $94.80\%$ ---
+and one obvious alternative explanation, namely that our training still differs
+from theirs. The next subsection removes that explanation rather than arguing
+about it.
+
+\subsection{The authors' own adapter}
+\label{sec:upstream}
+
+\gc{} released its trained adapters. We load the Mistral checkpoint directly,
+reproducing their \texttt{LinearWithLoRA} arithmetic
+($y = \mathrm{linear}(x) + \lambda \cdot \tfrac{\alpha}{r}\,((x A) B)$, with
+$A \in \mathbb{R}^{d \times r}$ and $B \in \mathbb{R}^{r \times d'}$ --- the
+transpose of PEFT's convention, which is why the weights are not loaded through
+PEFT) and reading rank, scaling and target layers from the checkpoint's own
+configuration block rather than ours ($r = 4$, $\alpha = 4$, layers $19$--$28$;
+$40$ tensors across $20$ modules). Their protocol throughout.
+
+\begin{table}[h]
+\centering
+\caption{\gc{}'s released adapter, evaluated under \Pcode{}. Every row uses their
+weights; the populations differ.}
+\label{tab:upstream}
+\begin{tabular}{lrrr}
+\toprule
+Population & $n$ & Repaired & Rate \\
+\midrule
+\textbf{Their published glitch list} (their denominator) & $2{,}539$ & $\mathbf{2{,}408}$ & $\mathbf{94.84\%}$ \\
+\quad \emph{their published figure} & $2{,}539$ & \emph{$2{,}407$} & \emph{$94.80\%$} \\
+\midrule
+Our \Pcode{} census & $2{,}552$ & $2{,}421$ & $94.87\%$ \\
+Our held-out set, restricted to their list & $473$ & $441$ & $93.23\%$ \\
+Glitch tokens \emph{absent} from their list & $15$ & $15$ & $100.00\%$ \\
+\midrule
+Clean tokens, gate active & $500$ & $500$ & $100.00\%$ \\
+Clean tokens, adapter forced on & $500$ & $500$ & $100.00\%$ \\
+Control: LoRA branch zeroed & $473$ & $1$ & $0.21\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The headline claim reproduces, to within one token.} \gc{} reports
+$2{,}407$ repaired of $2{,}539$; we measure $2{,}408$. The control --- the same
+weights with the LoRA branch zeroed --- collapses to $0.21\%$, so the repair comes
+from their parameters and not from the base model. This is a second anchor,
+independent of the census anchor: our harness reproduces both \gc{}'s published
+token list and its published repair rate.
+
+\paragraph{Our shortfall was ours.} On the $473$ tokens our own adapter held out,
+their adapter scores $93.23\%$ where ours scored $78.11\%$ --- same tokens, same
+prompt, same decoding, same harness. The difference is a property of the adapter,
+which means of our training run. The $78.11\%$-versus-$94.80\%$ comparison is
+withdrawn as a statement about the method.
+
+\paragraph{What this cannot settle.} Their adapter trained on their entire
+published list, so the $473$-token row is a \emph{training-set} number for them
+and says nothing about generalisation. The only genuinely unseen population is
+the $15$ tokens our census finds glitchy that are absent from their list; their
+adapter repairs all $15$. That is a positive signal at $n = 15$ and nothing
+stronger. Whether \gc{} generalises to unseen glitch tokens therefore remains
+open: our held-out design is the right instrument, and the adapter it currently
+uses is not good enough for its answer to be worth quoting.
+
+\subsection{The gate does not close}
+\label{sec:gate}
+
+\gc{}'s central design claim is that repair is \emph{lossless by construction}:
+``a gating mechanism dynamically controls the activation of these branches based
+on the model's input, ensuring precise intervention without disrupting normal
+inference behavior.'' The gate is a set-membership test --- $\lambda = 1$ when
+\emph{any} token of the input lies in $G$ --- and this is how the authors'
+released code implements it
+(\texttt{any(token.item() in self.glitchtokens ...)}).
+
+The set $G$ is the same object as the census of Section~\ref{sec:rq1}, and it
+inherits that section's problem in a form that is no longer presentational.
+\gc{}'s own published $G$ for this model contains the vocabulary entries
+\texttt{and}, \texttt{for}, \texttt{with}, \texttt{by}, \texttt{about},
+\texttt{because}, \texttt{using}, \texttt{here}, the apostrophe, \texttt{=} and
+\texttt{!}; $26$ of its $2{,}539$ ids fall below id $1{,}000$, i.e.\ among the
+most frequent entries in the vocabulary, and $548$ decode to plain ASCII words.
+Consequently:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{The gate opens on ordinary prose.} Over sentences drawn from the two
+papers under study, $\lambda = 1$ for $197$ of $343$ ($57.4\%$): $62.1\%$ of
+\gc{}'s own sentences and $51.4\%$ of \gp{}'s. The most frequent cause is the
+token \texttt{and}, which alone opens $19.2\%$ of sentences.
+\item \textbf{The gate opens on the repair evaluation's own boilerplate.} The
+prompt template contains ids $304$ (\texttt{and}) and $464$ (the apostrophe),
+both in $G$. So $\lambda = 1$ for every probe regardless of the token under test,
+and the gate is vacuous during the headline repair measurement.
+\item \textbf{It never closed in our measurements.} Under \Pcode{} our evaluation
+recorded $\lambda = 1$ for all $975$ examples and $\lambda = 0$ for none,
+including all $500$ clean tokens. The $99.6\%$ ``gated'' cell of
+Table~\ref{tab:gc} is therefore identical to the forced-on cell by construction.
+Only the \Ppaper{} row measures a closed gate, and it does so because \emph{our}
+stricter census happens to exclude \texttt{and} and the apostrophe --- an accident
+of our probe, not a property of the method.
+\item \textbf{It never closed for the authors' adapter either.} Across all
+$6{,}079$ examples of Section~\ref{sec:upstream} --- their weights, their
+published $G$, their template, their membership rule --- the gate closed
+\emph{zero} times.
+\end{itemize}
+
+The consequence is specific. \gc{}'s losslessness is not delivered by the
+mechanism the paper credits. On ordinary input the adapter is active, so any
+preservation of capability is an empirical property of a small,
+narrowly-trained LoRA --- not a mathematical guarantee that the base model is what
+runs. The paper's own capability table is consistent with this and, read
+carefully, demonstrates it: if $\lambda$ were $0$ on benchmark prompts the \gc{}
+column would be \emph{bit-identical} to the original-model column, and it is not
+(Gemma-2b-it MMLU $38.14 \rightarrow 40.27$; Llama-2 GSM8K
+$23.05 \rightarrow 23.88$). Those deltas are only possible if the adapter was
+active.
+
+We therefore do not dispute that \gc{} preserves capability --- their evidence
+supports it and ours is consistent with it ($100\%$ of clean tokens intact with
+the adapter forced on). We dispute the stated reason, and note that ``lossless by
+construction'' and ``lossless in our measurements'' warrant different amounts of
+confidence when the method is deployed against a different $G$.
+
+\subsection{Coverage is bounded by a detector \gc{} does not provide}
+
+A glitch token \emph{not} in $G$ receives $\lambda = 0$ and therefore no repair,
+by construction. \gc{} is a method for repairing an enumerated list, and its
+coverage in deployment is bounded by the completeness of whatever detection step
+produced that list --- a step \gc{} does not perform. Composing our two
+measurements: the best detection recall we could reproduce is $0.404$
+(Section~\ref{sec:rq2}) and held-out repair is $0.781$ under the same protocol,
+so a pipeline assembled from these two published components would repair roughly
+$0.404 \times 0.781 \approx 32\%$ of the population, against a headline of
+$94.80\%$. That composition assumes independence between the stages and inherits
+every caveat of both, so it is an order-of-magnitude statement rather than a
+measurement; it is reported because it is the number a practitioner needs and
+neither paper computes it.
+
+% =====================================================================
+\section{RQ5 --- Inference cost: withdrawn}
+\label{sec:rq5}
+% =====================================================================
+
+\textbf{No inference-speed result is reported.} The reason is a defect in our own
+instrumentation, stated because it is the kind of error the rest of this work
+exists to catch.
+
+Two speed runs disagreed sharply --- the first gave \gp{} hooks at $0.63\times$
+and the \gc{} adapter at $0.56\times$ base, the second gave both at
+$\approx 0.99\times$ --- and the reversal was attributed to a configuration
+change, namely that the first applied the repair correction at every decoding
+step where the second applied it only at the token's own position. Re-reading the
+code falsifies that account: the speed script constructs the hook object without
+binding the position index, so it falls back to $-1$ and the correction fires at
+every decoding step in \emph{both} runs. The file is unmodified since the
+repository's first commit, so no configuration change occurred. The cause of a
+$1.6\times$ swing remains unexplained, and the same script measures the \gc{}
+adapter with no gate attached despite that variant having been reported as gated.
+
+Two points nevertheless frame the eventual measurement. First, only ratios within
+one environment are meaningful, since \gc{}'s published table was measured on
+different hardware. Second, the gate does not exempt \gc{} from overhead: because
+$\lambda$ multiplies a branch that is still computed, the adapter's arithmetic
+cost is paid on clean inputs as well as glitchy ones --- true of the authors'
+implementation and of ours. \gc{}'s ``negligible impact on inference speed'' is
+therefore a claim about the size of the LoRA, not about the gate. We also note
+that the $11.82$ tokens/s their table attributes to \gp{} is, by their own
+description, their own ``simple \gp{} implementation'' rather than the original
+authors' code, which was never released --- so that row measures an unspecified
+reimplementation, not a published method.
+
+% =====================================================================
+\section{Threats to validity}
+\label{sec:threats}
+% =====================================================================
+
+\subsection{Which findings are anchored}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Anchored.} Everything concerning \gc{}. Our census under \Pcode{}
+reproduces $2{,}537$ of their $2{,}539$ published tokens; their released code
+allowed component-by-component matching of the adapter, targets and optimisation
+settings; and their released adapter reproduces their headline rate to one token.
+Disagreements here are informative.
+\item \textbf{Not anchored.} Everything concerning \gp{}. No code was released,
+and three specifications are incomplete (the adaptive constants; the adjusted
+tensor; the affected positions), two of which change the outcome by an order of
+magnitude. A disagreement therefore cannot be attributed with confidence, and is
+reported as a failure to reproduce from the published description --- a
+legitimate finding about reproducibility, not a refutation of the method.
+\end{itemize}
+
+\subsection{Construct validity: the correctness oracle is imperfect}
+
+Both papers, and this evaluation, judge repetition by asking whether the target
+string appears in the output. This is weak in two identifiable cases: tokens
+whose printable form is empty, for which the test is trivially satisfied, and
+very short tokens, where incidental occurrence is plausible. In our candidate set
+$32$ tokens are whitespace-only and $3{,}535$ have a stripped length of at most
+one character. Concretely, $3{,}253$ of the $30{,}755$ verdicts of ``normal''
+under \Ppaper{} --- $10.6\%$ --- rest on a match of at most one character.
+
+The defect is shared with the authors' released code, but sharing it is not a
+defence: some fraction of every census in this literature, ours included, is
+likely mislabelled for short tokens. This is the most significant unaddressed
+construct-validity threat. It is orthogonal to the protocol sensitivity of
+Section~\ref{sec:rq1} --- fixing the oracle would not close that gap, since the
+oracle accounts for under $1\%$ of it.
+
+\subsection{Internal validity}
+
+One model; one adapter seed for \gc{}; a repair evaluation that consumes an
+oracle glitch set rather than \gp{}'s own detector output; and an
+attention-kernel attribution in Section~\ref{sec:rq2} that is an inference rather
+than a controlled contrast. The oracle-set choice is deliberate --- it isolates
+repair capability from detection error --- but it means the two stages are
+evaluated separately rather than as the end-to-end pipeline the paper describes.
+
+The single \gc{} seed should be stated plainly: an earlier draft attributed it to
+training cost, and that was not true. One adapter trains in $149$ seconds under
+\Ppaper{} and $428$ under \Pcode{}, so three seeds is a matter of minutes. It is
+a gap in the work, not a constraint on it. The same applies to the three
+detection seeds at $211$\,s each.
+
+\subsection{External validity}
+
+All results are for one 7B model. The papers' headline figures are cross-model
+averages, and a single model cannot refute an average; results are stated as
+claims about this model, and where a published number is compared we use that
+paper's \emph{Mistral-specific} figure rather than its average.
+
+Two considerations bear on generalisation. In \gc{}'s favour, the rescaling
+finding (Section~\ref{sec:rescale}) is a five-model result requiring no compute.
+Against it, the gate finding is likely to be \emph{worse} on other models, not
+better: Qwen-7B-Chat's published $G$ has $44$ ids below $1{,}000$ against
+Mistral's $26$, and Gemma-2b-it's $G$ covers $29{,}831$ of its vocabulary.
+
+\subsection{Conclusion validity}
+
+Three seeds bound variance only loosely. The $\alpha$/$\beta$ grid is single-seed
+at $500$ tokens per cell, so individual cell contrasts of a few tokens are within
+noise; only the marginal structure is interpreted. Where a difference is small
+relative to the observed spread we say so rather than reporting it as a finding.
+
+% =====================================================================
+\section{What this evaluation corrected in itself}
+\label{sec:selfcorrection}
+% =====================================================================
+
+The implementation was submitted to adversarial review before anything was
+reported, and the results were then re-checked against the stored artefacts a
+second time by a different author. Both passes found errors. They are reported
+because the difference between the pre- and post-correction numbers measures how
+sensitive these methods are to choices the papers do not pin down --- and because
+a benchmark's authority rests on its auditability.
+
+\begin{table}[h]
+\centering
+\caption{Corrections, and their direction. ``Favours'' records whether the
+corrected version is better or worse for the original authors.}
+\label{tab:corrections}
+\small
+\begin{tabular}{p{5.2cm}p{4.2cm}p{4.2cm}l}
+\toprule
+Claim as first written & What was wrong & Corrected form & Favours \\
+\midrule
+$15$--$26$ point memorisation gap in \gc{} & our training: 3 epochs not 15, wrong LR, unseeded, dropped gradients & gap is $4.85$ points; held-out exceeds train under \Ppaper{} & authors \\
+\addlinespace
+Held-out $78.11\%$ vs claimed $94.80\%$ is a reproduction shortfall & still our training: their adapter scores $93.23\%$ on the same tokens & the claim reproduces to one token & authors \\
+\addlinespace
+Losslessness is supported by the gate & the gate never closed; $99.6\%$ was the always-on number relabelled & losslessness is real but not from the gate & mixed \\
+\addlinespace
+$37$--$44\%$ inference-speed penalties & v1 configuration artefact & withdrawn & authors \\
+\addlinespace
+$\approx 1\%$ inference-speed overhead & the script never binds the position index; both runs measured the same configuration & withdrawn; no result reported & neither \\
+\addlinespace
+\gp{}'s calibration gain is unattainable & argued from the configuration we classify as our own error; corrected value is below, not above, the paper's & withdrawn; replaced by an identifiability argument & authors \\
+\addlinespace
+``$\beta$ is inert'' & partly an artefact of adjusting the wrong tensor & $\beta$ is structurally starved, not inert; $m$-sweep establishes the point independently & mixed \\
+\addlinespace
+Census gap is due to generation length & length accounts for $0.13\%$; wording for $99$--$100\%$ & umbrella claim survives and strengthens; stated cause reversed & neither \\
+\addlinespace
+Factors do not interact & the oracle effect changes sign between prompts & report the range & neither \\
+\addlinespace
+$100\%$ precision fails due to fp16 non-determinism & the divergence is a deterministic kernel mismatch between our own scripts & narrower claim about the inference stack & authors \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two further errors of \emph{implementation} were found and fixed before any of
+the above: \gp{} repair adjusted the already-multiplied product of the gate and
+data streams rather than the two streams separately; and \gc{}'s $\lambda$ gate
+was absent entirely, so every claim about clean-input behaviour was measured on
+an always-on adapter. Nine smaller correctness defects were also fixed (unseeded
+training; a dropped final gradient-accumulation window each epoch; adaptive
+parameters fitted on their own evaluation set; an absolute value inserted into a
+published signed ratio; held-out leakage; a training-target format mismatch; an
+inconsistent attention kernel; a stale checkpoint silently resumed; and an
+advertised experiment that had never been executed).
+
+\paragraph{The lesson is not ``audit the implementation''.} The first pass found
+errors in the \emph{code}. The two largest later corrections --- losslessness and
+inference speed --- are errors in the \emph{reporting}: the code did something
+defensible and the prose described something else, and every number involved was
+real, stored and reproducible. Auditing an implementation does not catch these.
+What caught them was re-reading each stored artefact against the sentence written
+about it.
+
+\paragraph{The safeguards that worked were structural, not diligence.} Retained
+raw generations made the factorial decomposition possible after the fact;
+recorded provenance --- including a dirty-working-tree flag --- exposed artefacts
+attributed to commits that could not have produced them; a configuration
+fingerprint caught a ``corrected'' parameter grid that had silently resumed its
+own pre-correction checkpoint; and a reviewer instructed to disbelieve the
+documentation found what internal review had not.
+
+% =====================================================================
+\section{Recommendations}
+% =====================================================================
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Publish the census and the probe, not just the rate.} The population
+a repair rate is a fraction of is set by the prompt used to find it, and $99\%$ of
+a $2.5\times$ difference in that population comes from wording alone. A paper
+reporting a repair rate without its census and its verbatim probe is not
+reporting a reproducible quantity. The same applies to reporting a competitor's
+rate: rescaling it onto one's own denominator produces a number the competitor
+never measured.
+\item \textbf{Do not let the census become a runtime component without saying
+so.} \gc{}'s gate consults the glitch set at inference time, which converts a
+measurement artefact into a behavioural one. If a set built by a probe is going
+to gate a production code path, its false-positive rate on ordinary text is a
+first-order property and should be reported.
+\item \textbf{Evaluate learned repair on held-out tokens.} A method trained on an
+enumerated list and evaluated on that same list reports a quantity that includes
+memorisation. The split costs nothing and changes the interpretation.
+\item \textbf{Report collateral damage.} Neither paper states what its repair does
+to normal tokens. It is cheap to measure and is the natural counterweight to a
+repair rate.
+\item \textbf{Specify the intervention completely.} For \gp{}, the withheld
+constants are the visible gap, but the unstated tensor and unstated positions
+change the outcome by an order of magnitude and are invisible to a reader. A
+method description should be sufficient to determine what the code does.
+\item \textbf{Specify the inference stack.} Attention kernel, precision and
+decoding path change the oracle's verdict on a measurable fraction of tokens.
+Where a claim is $100\%$ by construction, that should be stated as a definition
+rather than presented as a measurement.
+\end{enumerate}
+
+% =====================================================================
+\section{Conclusion}
+% =====================================================================
+
+\paragraph{What to believe.} \gc{}'s headline repair rate is real: the authors'
+own released adapter reproduces it to within one token. Two attempts to find a
+shortfall in it --- a memorisation argument and a held-out comparison --- both
+turned out to be shortfalls in our replication of their training. It remains
+measured on the training population, so it is not a generalisation estimate, and
+the one unseen population we could construct ($n = 15$) is too small to settle
+that. \gp{}'s repair mechanism works but weakly, and its published configuration
+cannot be reconstructed at all.
+
+\paragraph{What to deploy.} Three things bound what either method delivers, none
+visible from the papers. Coverage is bounded by detection: \gc{} repairs only
+tokens on a list it is given, and the best detection recall we could reproduce is
+$0.404$, so a pipeline built from these two published components covers roughly a
+third of the population, not $94.80\%$. The ``lossless'' guarantee is not a
+guarantee: the gate that provides it opens on the majority of ordinary text.
+And the population itself is a property of the probe --- anyone deploying these
+methods will build their own glitch set with their own prompt, and a $2.5\times$
+difference in that set is attainable by wording alone.
+
+\paragraph{What remains open.} \gp{}'s adaptive calibration is unrecoverable, so
+its principal claim can be neither reproduced nor refuted. Its fixed-value
+baseline is under-determined by its own description. Whether \gc{} generalises to
+unseen glitch tokens is unresolved: the design that answers it is ours, but our
+adapter is not yet good enough for its answer to be worth quoting, and the
+authors' adapter has seen every token on their list. And the inference-speed
+measurement was withdrawn rather than published.
+
+\paragraph{On direction.} Of the substantive corrections made here, most moved
+\emph{in the original authors' favour}. What survived in the other direction is
+narrower and more specific: the census is a property of the probe, the competitor
+counts are rescaled rather than quoted, \gp{}'s repair is under-specified to the
+point of being unfalsifiable, and \gc{}'s losslessness is credited to the wrong
+mechanism. That asymmetry is the most useful thing to report about how
+reproduction studies go wrong: the easy failure mode is not missing an error, it
+is finding one that is your own and publishing it as someone else's.
+
+% =====================================================================
+\section{Provenance}
+\label{sec:provenance}
+% =====================================================================
+
+Every number above is either produced by code in this repository and stored under
+\texttt{results/}, or read from one of the two papers. The two are distinguished
+below, because conflating them is the failure this work is about. Derived
+quantities --- sums, set operations, re-scorings, none of which is the direct
+output of any run --- are recomputed by \texttt{scripts/verify\_claims.py}, which
+prints every figure in Sections~\ref{sec:rq1}, \ref{sec:rq3} and \ref{sec:gate}.
+
+\begin{longtable}{p{4.4cm}p{4.6cm}p{5.0cm}}
+\toprule
+\textbf{Result} & \textbf{Script} & \textbf{Artefact} \\
+\midrule
+\endhead
+Census (Table~\ref{tab:census}) & \texttt{run\_ground\_truth.py} & \texttt{results/ground\_truth/<m>/\{tokens.csv, summary.json, sweep\_checkpoint.csv\}} \\
+\Pcode{} census & \texttt{-{}-protocol gccode} & \texttt{.../gccode/} \\
+Budget cell (24 tokens) & \texttt{-{}-max-new-tokens 24 -{}-tag budget24} & \texttt{.../gccode/budget24/} \\
+Factorial (Table~\ref{tab:factorial}), anchoring, mechanism, oracle counts & \texttt{verify\_claims.py} & derived from the \texttt{sweep\_checkpoint.csv} files \\
+Detection (Table~\ref{tab:detect}) & \texttt{run\_gp\_detect.py} & \texttt{results/gp\_detect/<m>/\{runs.csv, summary.json\}} \\
+Implementation 2$\times$2 (Table~\ref{tab:implchoice}) & \texttt{run\_gp\_repair.py} with \texttt{-{}-stream-mode}, \texttt{-{}-position} & \texttt{results/gp\_repair/<m>/\{summary.json, ablation\_product/, abl\_separate\_last/, abl\_product\_last/\}} \\
+Grid (Table~\ref{tab:grid}), $m$-sweep (Table~\ref{tab:msweep}) & \texttt{run\_gp\_alpha\_beta\_sweep.py} & \texttt{.../\{alpha\_beta\_grid.csv, m\_sweep.csv, m\_sweep\_meta.json\}} \\
+Pre-correction grid & (retained for contrast) & \texttt{.../alpha\_beta\_grid.v1\_product\_last.csv} \\
+Our adapter (Table~\ref{tab:gc}) & \texttt{run\_gc\_train.py}, \texttt{run\_gc\_eval.py} & \texttt{results/gc/<m>/\{split.json, train\_meta.json, eval.json\}} \\
+Their adapter (Table~\ref{tab:upstream}) & \texttt{run\_gc\_upstream\_eval.py} & \texttt{results/gc\_upstream/<m>/gccode/eval.json} \\
+Gate statistics (Section~\ref{sec:gate}) & \texttt{verify\_claims.py} & \texttt{eval.json:gate\_stats} + the tokenizer + \gc{}'s published list \\
+Inference speed & \texttt{run\_speed.py} & \emph{withdrawn --- see Section~\ref{sec:rq5}} \\
+Run narrative, with corrections & --- & \texttt{docs/RUNLOG.md} \\
+\midrule
+\multicolumn{3}{l}{\emph{Read from the papers, not measured here:}} \\
+Table~\ref{tab:rescale}; implied populations & --- & \gc{} Table 2; \gp{} Tables 3 and 5 \\
+\gp{}'s claimed detection row & --- & \gp{} Table 3 \\
+\gc{}'s capability deltas (Section~\ref{sec:gate}) & --- & \gc{} Table 4 \\
+\gc{}'s published glitch sets and adapters & --- & \texttt{third\_party/GlitchCleaner/} \\
+\bottomrule
+\end{longtable}
+
+\paragraph{One figure is not our own measurement.} The statement in
+Section~\ref{sec:gate} that the gate opens on ordinary benchmark text is
+supported here by our own sentence-level measurement ($57.4\%$ over the two
+papers' text). A prior adversarial review of this project additionally reported
+$92.27\%$ of GSM8K items and $89.77\%$ of MMLU items opening the gate; those
+figures are recorded in \texttt{docs/evidence\_adjudications/upstream\_code.md}
+and have \emph{not} been independently re-measured here. They are cited as
+corroboration, not as a result of this evaluation.
+
+\end{document}

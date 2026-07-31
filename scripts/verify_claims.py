@@ -80,6 +80,66 @@ def census(model):
     return G_p, G_c
 
 
+def factorial(model):
+    """Isolate the three factors separating the two protocols.
+
+    Each is measured with the other two held fixed, at BOTH settings of the
+    remaining factors -- they interact, so a single additive decomposition would
+    be misleading. Greedy decoding makes the stored generations re-scorable
+    offline, which is what lets this be computed without re-running the model.
+    """
+    _hdr("RQ1 - factorial: which factor separates the two protocols?")
+    from src.common.model_utils import load_tokenizer, token_str
+    from src.common.prompts import is_repetition_correct
+    tok = load_tokenizer(get_model_cfg(model))
+    gt = results_dir("ground_truth", model)
+    cand = set(pd.read_csv(gt / "tokens.csv")
+               .query("category in ['normal','glitch']").token_id)
+
+    def load(p):
+        d = _read_sweep(p)
+        # id 3 is NUL on this tokenizer and does not survive the CSV round trip
+        return d[d.token_id.isin(cand) & (d.token_id != 3)]
+
+    # Each protocol's oracle, exactly as its run applied it.
+    oracles = {
+        "paper": lambda tid, txt: is_repetition_correct(token_str(tok, int(tid)), txt),
+        "gccode": lambda tid, txt: tok.decode([int(tid)]).lstrip() in txt,
+    }
+    gens = {"P_paper@24": gt / "sweep_checkpoint.csv",
+            "P_code@10": gt / "gccode" / "sweep_checkpoint.csv",
+            "P_code@24": gt / "gccode" / "budget24" / "sweep_checkpoint.csv"}
+
+    n = {}
+    print(f"  {'generations':14s} {'paper oracle':>14s} {'gccode oracle':>14s}")
+    for gname, path in gens.items():
+        if not path.exists():
+            continue
+        df = load(path)
+        row = []
+        for oname, fn in oracles.items():
+            n[(gname, oname)] = sum(1 for t, x in zip(df.token_id, df.text.astype(str))
+                                    if not fn(t, x))
+            row.append(n[(gname, oname)])
+        print(f"  {gname:14s} {row[0]:14d} {row[1]:14d}")
+
+    gap = 1564
+    print(f"\n  each factor isolated, at both settings of the others "
+          f"(total published gap +{gap}):")
+    if ("P_code@24", "gccode") in n:
+        for o in ("paper", "gccode"):
+            d = n[("P_code@10", o)] - n[("P_code@24", o)]
+            print(f"    budget 24->10   ({o:6s} oracle)      {d:+6d}  {d / gap * 100:6.2f}%")
+    for g in ("P_paper@24", "P_code@10"):
+        d = n[(g, "gccode")] - n[(g, "paper")]
+        print(f"    oracle paper->gccode ({g:10s}) {d:+6d}  {d / gap * 100:6.2f}%")
+    for o in ("paper", "gccode"):
+        d = n[("P_code@10", o)] - n[("P_paper@24", o)]
+        print(f"    prompt wording  ({o:6s} oracle)      {d:+6d}  {d / gap * 100:6.2f}%")
+    print("  => the factors INTERACT (the oracle effect changes sign), so report the"
+          "\n     range rather than a single additive decomposition.")
+
+
 def anchoring(model, G_c):
     _hdr("RQ1 - anchoring against GlitchCleaner's published list")
     p = REPO / "third_party" / "GlitchCleaner" / "Glitchtokens"
@@ -244,6 +304,8 @@ def main():
 
     _G_p, G_c = census(args.model)
     G_pub = anchoring(args.model, G_c)
+    if not args.skip_tokenizer:
+        factorial(args.model)
     gp_repair(args.model)
     gc(args.model)
     rescaling()
