@@ -3,6 +3,12 @@
 Chronological record of every benchmark run: what was executed, what came out,
 how it was verified. Newest entries at the bottom.
 
+> **Read the last entry first.** Entries are appended, never rewritten, so an
+> earlier section may state a conclusion a later one withdraws. The final entry
+> (2026-07-31, independent verification pass) lists every claim in this file that
+> did not survive recomputation from `results/`. Sections it supersedes carry an
+> inline pointer.
+
 ---
 
 ## 2026-07-17 - Skeleton built and smoke-tested (commit 8824319)
@@ -324,9 +330,138 @@ What remains: held-out 78.11% vs the paper's claimed 94.80% for this model. And
 the losslessness claim is now SUPPORTED - with the real gate, clean tokens are
 unaffected (100% / 99.6%).
 
+> **SUPERSEDED - see V1 in the 2026-07-31 verification entry.** The losslessness
+> sentence above is withdrawn. Under the gccode protocol the gate never closed
+> (`gate_stats.examples_gate_off == 0`), so 99.6% is the always-on number, not a
+> gate measurement. The repair figures in the table above are unaffected.
+
 ### RQ5 - speed, corrected: BOTH SLOWDOWN CLAIMS WITHDRAWN
 base 31.97 / GP hooks 31.55 / GC gated adapter 31.57 tok/s -> ~1% overhead each.
 The earlier 37-44% penalties were artefacts of our v1 configuration (repair hooks
 firing at every decode step rather than only at the token's position).
 **CAVEAT: this run has not been repeated with controlled ordering and the change
 from the v1 measurement is large. Re-verify before publishing (see HANDOVER.md).**
+
+> **SUPERSEDED - see V2 in the 2026-07-31 verification entry.** The stated cause
+> is contradicted by the code: `run_speed.py` never calls `bind_position()`, so
+> both runs measured the every-decode-step configuration. "GC gated adapter" is
+> also mislabelled - no gate is applied in that script. Do not cite either number.
+
+---
+
+## 2026-07-31 - INDEPENDENT VERIFICATION PASS (new author; supersedes specific claims above)
+
+Every headline number in this log and in `docs/benchmark_study.tex` was recomputed
+from the artefacts under `results/` rather than accepted from the text. Most
+reproduce exactly. The exceptions are recorded below, each with the file the
+correct value comes from. Verification script: `scripts/verify_claims.py`.
+
+### Reproduced exactly (no change)
+RQ1 census 988 / 2,552 and filtering 253+3+1; budget-24 cell 2,550; anchoring
+2,537 of 2,539 (Jaccard 0.9933) against
+`third_party/GlitchCleaner/Glitchtokens/Mistral-7B-Instruct-v0.1-glitch-tokens.csv`;
+bidirectional count 146; gap 1,564; whitespace mechanism 1,089/2,552 = 42.7%;
+all RQ2 figures including per-seed false positives 1,0,1 and 3,4,1; the RQ3 2x2
+(6.48 / 2.23 / 17.41 / 15.18 %) and the m-sweep; all RQ4 figures. Both papers'
+quoted claims were checked against `papers/extracted/` and are quoted correctly.
+
+### V1 - The losslessness conclusion above is WRONG. The gate does not close.
+`results/gc/mistral-7b-instruct-v01/gccode/eval.json` records
+`gate_stats: {examples_gate_on: 975, examples_gate_off: 0}`. Under the gccode
+protocol the gate was open for **every** example, including all 500 normal
+tokens. The 99.60% "clean (gated)" figure is therefore not a measurement of the
+gate at all - it is byte-identical to the forced-on figure (498/500) because the
+adapter was active in both.
+
+Cause: the gate is a set-membership test over the whole input, and the prompt
+template contains ids **304 (`and`)** and **464 (`'`)**, both of which are in
+GlitchCleaner's own published glitch list. Confirmed against upstream:
+`GlitchCleaner.py` reads `glitchtokens = df['index'].tolist()` and sets the flag
+via `any(token.item() in self.glitchtokens for token in token_ids[b])`.
+Their published G for Mistral also contains `for`, `with`, `by`, `about`,
+`after`, `because`, `here`, `using`, `=` and `!`. Measured: the gate opens on
+**57.4% (197/343)** of sentences drawn from the two papers themselves.
+
+This was already established in `docs/evidence_adjudications/upstream_code.md`
+(sections 1.6 and D2, with GSM8K 0-shot 92.27% and MMLU 89.77%), but never
+reached this log, HANDOVER.md or the study document, all of which assert the
+opposite. The 2026-07-31 entry above ("the losslessness claim is now SUPPORTED")
+is **WITHDRAWN**. The claim holds only for our artificial single-token probes
+under the paper-protocol census, which happens to exclude `and` and `'`.
+
+The corrected statement is stronger and is about the paper, not about us:
+GlitchCleaner's stated mechanism for losslessness - clean inputs bypass the
+adapter - does not operate on ordinary text. What its Table 4 actually shows is
+that the adapter is *empirically* benign with the gate open. Their Table 4 also
+proves the gate leaked: a truly gated-off adapter would give bit-identical
+scores, and theirs differ (Gemma-2b-it MMLU 38.14 -> 40.27).
+
+### V2 - RQ5 does not measure the configuration it is described as measuring.
+`scripts/run_speed.py` constructs `RepairHooks(...)` but never calls
+`.bind_position(tok)`. In `src/glitchprober/repair.py` that leaves
+`_tok_pos = None`, so `__enter__` falls back to `pos = -1` - the hooks fire at
+the last position of every forward pass, including every decode step. That is
+the **v1** configuration. `git log -- scripts/run_speed.py` shows the file is
+unmodified since commit 8824319, so BOTH speed runs used it.
+
+Consequence: the explanation given above for the 37-44% -> ~1% reversal ("repair
+hooks firing at every decode step rather than only at the token's position") is
+contradicted by the code, since the corrected run fires at every decode step too.
+The cause of the reversal is unexplained and the result must not be published
+until the defect is fixed and the run repeated. Separately, no gate is applied to
+the GC variant in `run_speed.py`, so "GC gated adapter 31.57" above is mislabelled.
+
+### V3 - Neuron totals cited in HANDOVER appear in no artefact.
+HANDOVER (and `docs/review_panel/committee.md` R2, from which it was copied)
+state "63 promotion neurons against 16,928 suppression neurons". Summing
+`neuron_selection` in `results/gp_repair/mistral-7b-instruct-v01/summary.json`
+gives **66 / 17,201**. `m_sweep.csv` at m=1.0 gives **63 / 17,041** - a different
+run (500-token glitch sample). 16,928 matches nothing on disk. The substantive
+claim is unaffected and is cleaner when stated correctly: ~66 promotion against
+~17,201 suppression out of 286,720 candidate neurons (10 layers x 2 streams x
+14,336).
+
+Related: "product mode gives Neun_up = 0 in all ten layers" is true of
+product/**token** (`ablation_product/`), but the v1 configuration was
+product/**last**, which gives 6,2,2,5,0,0,1,0,2,4 (`abl_product_last/`). The
+study document's "0-4 per layer" was approximately right for the config it named.
+
+### V4 - The study's beta paragraph quotes v1 numbers as if corrected.
+"alpha's marginal spread is 20.2pp against beta's 0.6" and "beta lifts repair
+from 0/500 to 34/500" both come from `alpha_beta_grid.v1_product_last.csv`.
+Recomputed from the corrected `alpha_beta_grid.csv`: marginal spreads are
+**6.13pp (alpha)** and **1.20pp (beta)**, and the alpha=1 row runs
+**1/500 -> 13/500** across beta = 0.25 ... 4.0. The corrected grid maximum is
+**7.60%**, attained at a **three-way tie**: (8, 1.0), (8, 4.0) and (16, 1.0).
+Value at the paper's (4, 1.5) is 6.80% (34/500) on the grid's 500-token sample,
+against 6.48% (32/494) on the held-out half in `summary.json` - two different
+denominators for the same configuration, which is why both must be labelled.
+
+### V5 - Smaller corrections, all recomputed
+* Held-out leakage is **10 of 197** (`train_meta.json: n_heldout_dropped_leaked`),
+  not the 18 of 197 stated twice in the study document. gccode: 35 of 510.
+* Newline comparison mixes predicates: newline-only is 1,088 vs **0**;
+  whitespace-or-empty is 1,115 vs 3. "1,088 against 3" compares two predicates.
+* Short-token oracle: **32** whitespace-only candidates and **3,535** with a
+  stripped length <= 1 (3,503 excluding the whitespace-only ones), not 31 and
+  3,504. The figure "3,253 of 30,755 normal verdicts rest on <= 1 stripped
+  character" is confirmed.
+* `train_seconds` is **148.9** for one GC adapter, so "training cost being the
+  constraint" for a single seed is not supportable; three seeds is ~7.5 minutes.
+* `alpha_beta_grid_meta.json` no longer exists, so the HANDOVER item asking for
+  its deletion is stale.
+* Table 1's caption ("reproduces the reported value to within rounding in all
+  five cases") does not hold for Mistral: 954.7 predicted against 956 reported.
+  A stronger form of the same finding is available - GlitchCleaner's Mistral rate
+  (37.65%) and Yi rate (53.27%) DIFFER from GlitchProber's published 37.60% and
+  53.26%, and GlitchCleaner's GlitchProber-column average is 50.08% against
+  GlitchProber's own 50.06%. That is the signature of `count = round(rate x |G|)`
+  followed by recomputing the rate from the rounded count, and it is independent
+  confirmation that the counts were derived rather than quoted.
+
+### Not an error, but the largest unused asset
+`third_party/GlitchCleaner/LoRA-Parameter/Mistral-7B-Instruct-v0.1.pt` is the
+authors' own trained adapter. No experiment has used it. Evaluating their weights
+directly would anchor RQ4 the way the census anchors RQ1, and would remove the
+"our reconstruction may differ" alternative explanation from the one result where
+it currently carries the most weight.

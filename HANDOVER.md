@@ -4,6 +4,13 @@
 current numbers are, exactly where work stopped, and what to do next in priority
 order. Written 2026-07-31.
 
+> **Verification status.** Every headline number below was recomputed from
+> `results/` on 2026-07-31 by a second author. Most reproduce exactly. The
+> exceptions are marked ⚠ inline and recorded in full in the last entry of
+> `docs/RUNLOG.md`. Re-derive any of them with
+> `.\.venv\Scripts\python.exe scripts\verify_claims.py`. Two conclusions did not
+> survive: the losslessness result (§4, RQ4) and the speed result (§4, RQ5).
+
 ---
 
 ## 1. What this project is
@@ -44,6 +51,7 @@ their original paper." Fixing the denominator is the study's core contribution.
 | Model weights cache | `F:\hf_cache` (~15 GB for Mistral) |
 | **Main deliverable** | `docs/benchmark_study.tex` (standalone LaTeX study) |
 | Run narrative (chronological, with corrections) | `docs/RUNLOG.md` |
+| Recompute every derived number from `results/` | `scripts/verify_claims.py` |
 | Pipeline reference (what each step does) | `docs/PIPELINE.md` |
 | All results | `results/` |
 | Upstream GlitchCleaner code | `third_party/GlitchCleaner/` (gitignored — re-clone if missing) |
@@ -190,11 +198,26 @@ was mostly our own broken training** (3 epochs instead of 15, wrong LR, unseeded
 dropped gradients). With the authors' own hyperparameters the gap is 4.85 points,
 and under the paper protocol held-out *exceeds* train. GlitchCleaner generalises
 much better than we previously reported. What remains: 78.11% held-out vs the
-claimed 94.80%. Losslessness is **supported** with the real gate.
+claimed 94.80%.
 
-**RQ5 — speed:** base 31.97 / GP hooks 31.55 / GC gated 31.57 tok/s → ~1% overhead
-each. This **withdraws** an earlier claim of 37–44% penalties. ⚠ See §6.1 — this
-needs re-verification before publishing.
+⚠ **The losslessness column is NOT what it looks like — see RUNLOG V1.** Under the
+gccode protocol the gate never closed: `eval.json` records
+`gate_stats.examples_gate_off == 0`, so the 99.6% "clean (gated)" cell is the
+always-on number, not a gate measurement. The gate is a membership test over the
+whole input, and the prompt template contains ids 304 (`and`) and 464 (`'`), both
+of which are in GlitchCleaner's **own published** glitch list — along with `for`,
+`with`, `by`, `about`, `because`, `using`, `=` and `!`. Measured: the gate opens on
+**57.4%** of sentences taken from the two papers themselves. So "clean inputs are
+processed by the unmodified base model" does not hold on ordinary text, and the
+100.0% under the paper protocol is an artefact of our stricter census happening to
+exclude `and` and `'`. Run `python scripts/verify_claims.py` to reproduce.
+
+**RQ5 — speed:** base 31.97 / GP hooks 31.55 / GC adapter 31.57 tok/s → ~1% overhead
+each. This **withdraws** an earlier claim of 37–44% penalties. ⚠ **Do not cite
+either number — see RUNLOG V2.** `run_speed.py` never calls `bind_position()`, so
+the GP variant is measured in the every-decode-step configuration in *both* runs;
+the stated cause of the reversal is therefore contradicted by the code. No gate is
+applied to the GC variant either, so "GC gated" is a mislabel. See §6.1.
 
 ### Infrastructure built
 
@@ -231,14 +254,20 @@ write-up.
 
 ### 6.1 MUST DO — verification before anything is published
 
-1. **Re-verify the RQ5 speed result.** It reversed a large earlier finding
-   (37–44% → ~1%) in a single unreplicated run, and the three variants were
-   measured in one process where ordering/thermal effects could matter.
-   ```powershell
-   python scripts\run_speed.py --model mistral-7b-instruct-v01     # repeat 3x
-   ```
-   Measure each variant in a *fresh process* and report mean ± s.d. If it holds,
-   it is a clean result; if not, do not publish either number.
+1. **Fix `run_speed.py`, then re-verify the RQ5 speed result.** Two problems, and
+   the first must be fixed or the re-run measures the wrong thing:
+   - `RepairHooks(...)` is constructed without `.bind_position(tok)`, so
+     `_tok_pos` stays `None` and `__enter__` falls back to `pos = -1` — the
+     every-decode-step configuration, i.e. v1. The file is unmodified since commit
+     8824319, so both speed runs used it. The RUNLOG's stated cause for the
+     37–44% → ~1% reversal is therefore contradicted by the code.
+   - The GC variant is a plain `PeftModel` with no gate, despite being reported as
+     "GC gated adapter". Decide whether to gate it (the gate adds a multiply per
+     LoRA-B; the paper's point is that the branch is computed either way) and label
+     it accordingly.
+
+   Then measure each variant in a *fresh process* and report mean ± s.d. If it
+   holds, it is a clean result; if not, do not publish either number.
 
 2. **Run the attention-kernel A/B** (~15 min). The claim that detection false
    positives come from an SDPA-vs-eager mismatch is currently an *inference* from
@@ -250,10 +279,10 @@ write-up.
    Then re-score detection against the eager census. Prediction: false positives → 0.
    Either report the direct contrast, or state plainly that the A/B was not run.
 
-3. **Delete the poisoned artefact.** `results/gp_repair/mistral-7b-instruct-v01/alpha_beta_grid_meta.json`
-   was written by the run that silently resumed a stale checkpoint. Its
-   `neuron_selection` block is fresh but its `best_cell` is stale — the worst case.
-   Delete it and regenerate, or the document will point readers at a half-valid file.
+3. ~~**Delete the poisoned artefact.**~~ **DONE / stale.**
+   `results/gp_repair/mistral-7b-instruct-v01/alpha_beta_grid_meta.json` is not
+   present in the working tree and is not in the last commit. Nothing to do; the
+   study document must simply not reference it (it does not).
 
 4. **Re-run the corrected GP repair from a clean tree.** Every post-audit artefact
    carries `"git_dirty": true`, which violates the study's own stated provenance
@@ -276,12 +305,18 @@ write-up.
      whole "would require ~60% repair" inference collapses. **Rewrite it** using
      the 2×2 range, and make the honest point instead: the paper's figure sits
      inside the range spanned by its own unstated choices.
-   - **The E1 narrative mis-states the neuron asymmetry.** Product mode gives
-     `Neun_up = 0` in *all ten* layers (not "0–4"), and the corrected separate mode
-     gives **63** promotion neurons against **16,928** suppression neurons. So β is
-     structurally starved in *both* — that is a property of the paper's own ">99%
-     of normal tokens" criterion, not of our bug. This supports a *better* claim
-     than the one withdrawn, and the m-sweep confirms it independently.
+   - **The E1 narrative mis-states the neuron asymmetry.** ⚠ The review's own
+     numbers here are wrong — do not copy them. Recomputed from
+     `gp_repair/.../summary.json`, corrected separate mode gives **66** promotion
+     neurons against **17,201** suppression, out of 286,720 candidates (10 layers ×
+     2 streams × 14,336). The review's "63 / 16,928" matches nothing on disk; 63 /
+     17,041 is the *m-sweep* row at m=1.0, a different run. Also, `Neun_up = 0` in
+     all ten layers is true of product/**token**; the actual v1 config was
+     product/**last**, which gives 6,2,2,5,0,0,1,0,2,4 — so the document's "0–4 per
+     layer" was about right for the config it named. The substantive point stands
+     and is cleaner when stated correctly: β is structurally starved in *both*
+     readings, which is a property of the paper's own ">99% of normal tokens"
+     criterion, not of our bug. The m-sweep confirms it independently.
    - **Disclose the three denominators.** Repair rates use 988 (census), 494
      (held-out half), and 500 (grid sample) in different places. For a study whose
      thesis is "fix the denominator," every reported rate must state which one.
@@ -297,6 +332,20 @@ write-up.
    Workflow({scriptPath: "...\\workflows\\scripts\\study-review-panel-wf_f5f1a561-87c.js",
              resumeFromRunId: "wf_f5f1a561-87c"})
    ```
+
+### 6.2b MUST DO — the highest-value experiment nobody has run
+
+7b. **Evaluate GlitchCleaner's own released adapter.**
+   `third_party/GlitchCleaner/LoRA-Parameter/Mistral-7B-Instruct-v0.1.pt` (5.9 MB)
+   is the authors' trained weights. No experiment has touched it. Right now RQ4 is
+   the one result where "our reconstruction differs from theirs" is a live
+   alternative explanation for the 78.11%-vs-94.80% gap; loading their weights
+   removes it, and anchors RQ4 the way the census anchors RQ1. It also lets the
+   gate finding be tested on the authors' exact artefact rather than on ours.
+   Note the format is their custom `LinearWithLoRA` state dict (`w1_<layer>_A` /
+   `gate_proj_<layer>_B` style keys plus a `config` entry), not a PEFT directory,
+   so it needs a small loader — see `third_party/GlitchCleaner/GlitchCleaner.py`
+   lines ~168–210 for the key convention. ~15 min GPU once the loader exists.
 
 ### 6.3 SHOULD DO — extend coverage
 
@@ -349,18 +398,35 @@ Ordered by how much they'd survive a hostile reviewer.
 1. **The census is a property of the probe.** 988 vs 2,552 glitch tokens on the
    same model, same filtering; 99.0% of the gap is prompt *wording*. Anchored by
    recovering 2,537/2,539 of GlitchCleaner's published list. **Strongest result.**
-2. **Competitor counts are derived, not measured.** GlitchCleaner's reported
-   GlitchProber token counts = GP's rate × GC's denominator, for all five models,
-   while stating they are "taken from their original paper." Verified arithmetic.
-3. **GlitchProber's unstated implementation choices move repair 7.8×**, and its
+2. **The census is not only a denominator — it is a deployed component, and it
+   breaks the losslessness claim.** GlitchCleaner consults the glitch set $G$ at
+   inference time as its λ gate, by set membership over the *whole* input. Its own
+   published $G$ for Mistral contains `and`, `for`, `with`, `by`, `about`,
+   `because`, `using`, `'`, `=`, `!`. Measured: the gate opens on **57.4%** of
+   sentences from the two papers themselves; the previous author measured 92.3% of
+   GSM8K and 89.8% of MMLU items (`docs/evidence_adjudications/upstream_code.md`
+   §1.6). So "clean inputs are processed by the unmodified base model" — the paper's
+   stated mechanism for losslessness — does not operate on ordinary text. Their own
+   Table 4 confirms the leak: a truly gated-off adapter would give bit-identical
+   scores, and theirs differ (Gemma MMLU 38.14 → 40.27). This unifies findings 1 and
+   6: a probe artefact propagates into runtime behaviour, not just into a ratio.
+3. **Competitor counts are derived, not measured.** GlitchCleaner's reported
+   GlitchProber token counts = GP's rate × GC's denominator, while stating they are
+   "taken from their original paper." Four of five reproduce to within 0.6 of a
+   token; Mistral is off by 1.3. Stronger corroboration: GC's Mistral (37.65%) and
+   Yi (53.27%) rates *differ* from GP's published 37.60%/53.26%, and GC's average
+   for the GP column is 50.08% against GP's own 50.06% — the signature of
+   `count = round(rate × |G|)` followed by recomputing the rate.
+4. **GlitchProber's unstated implementation choices move repair 7.8×**, and its
    adaptive calibration is unrecoverable (four constants never published).
-4. **Promotion is vacuous; suppression carries the mechanism.** m-sweep: repair
-   *rises* as the promotion set shrinks to one neuron.
-5. **GP detection recall does not reproduce** (0.404 vs claimed 0.674) even under a
+5. **Promotion is vacuous; suppression carries the mechanism.** m-sweep: repair
+   *rises* as the promotion set shrinks to one neuron. Corroborated by the neuron
+   census: 66 promotion vs 17,201 suppression neurons out of 286,720.
+6. **GP detection recall does not reproduce** (0.404 vs claimed 0.674) even under a
    base-rate control — reported as a reproduction failure, not a refutation.
-6. **GlitchCleaner mostly generalises** (held-out 78.11%), losslessness holds with
-   the real gate, but falls short of the claimed 94.80%.
-7. **Neither paper reports variance or collateral damage.** We report both.
+7. **GlitchCleaner mostly generalises** (held-out 78.11%) but falls short of the
+   claimed 94.80%. Losslessness is **not** established — see finding 2.
+8. **Neither paper reports variance or collateral damage.** We report both.
 
 **Be careful with #6** — an earlier version of this study claimed a large
 memorisation gap that turned out to be our own training bug. That correction is
