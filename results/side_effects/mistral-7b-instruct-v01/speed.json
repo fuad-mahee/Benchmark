@@ -1,16 +1,25 @@
 {
-  "timestamp": "2026-07-20T11:55:18",
-  "git_commit": "36a3094",
+  "timestamp": "2026-07-31T01:15:06",
+  "git_commit": "b14e7d4",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
   "model": "mistral-7b-instruct-v01",
   "tokens_per_second": {
-    "base": 31.75744315158763,
-    "gp_hooks": 19.98954963228586,
-    "gc_adapter": 17.92915214263845
+    "base": 31.97070060835057,
+    "gp_hooks": 31.551147973342598,
+    "gc_adapter": 31.570795486162172
   },
   "relative": {
     "base": 1.0,
-    "gp_hooks": 0.6294445537340602,
-    "gc_adapter": 0.5645653542401801
+    "gp_hooks": 0.9868769646262182,
+    "gc_adapter": 0.9874915120851638
   },
   "paper_claims_tok_s": {
     "base": 66.3,

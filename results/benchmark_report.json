@@ -43,20 +43,20 @@
       },
       "rq3_gp_repair": {
         "adaptive": {
-          "n_glitch": 100,
+          "n_glitch": 40,
           "repaired": 1,
-          "repair_rate": 0.01,
-          "n_normal_checked": 100,
+          "repair_rate": 0.025,
+          "n_normal_checked": 40,
           "normal_broken": 0,
           "normal_break_rate": 0.0
         },
         "rule_based": {
-          "n_glitch": 100,
-          "repaired": 28,
-          "repair_rate": 0.28,
-          "n_normal_checked": 100,
-          "normal_broken": 16,
-          "normal_break_rate": 0.16
+          "n_glitch": 40,
+          "repaired": 7,
+          "repair_rate": 0.175,
+          "n_normal_checked": 40,
+          "normal_broken": 4,
+          "normal_break_rate": 0.1
         }
       },
       "rq4_gc_repair": {
@@ -99,52 +99,70 @@
       },
       "rq3_gp_repair": {
         "adaptive": {
-          "n_glitch": 988,
+          "n_glitch": 494,
           "repaired": 5,
-          "repair_rate": 0.005060728744939271,
+          "repair_rate": 0.010121457489878543,
           "n_normal_checked": 500,
-          "normal_broken": 1,
-          "normal_break_rate": 0.002
+          "normal_broken": 0,
+          "normal_break_rate": 0.0
         },
         "rule_based": {
-          "n_glitch": 988,
-          "repaired": 213,
-          "repair_rate": 0.21558704453441296,
+          "n_glitch": 494,
+          "repaired": 32,
+          "repair_rate": 0.06477732793522267,
           "n_normal_checked": 500,
-          "normal_broken": 5,
-          "normal_break_rate": 0.01
+          "normal_broken": 0,
+          "normal_break_rate": 0.0
         }
       },
       "rq4_gc_repair": {
-        "train_repaired": 644,
-        "train_repair_rate": 0.8141592920353983,
-        "heldout_repaired": 109,
-        "heldout_repair_rate": 0.5532994923857868,
-        "normal_ok_adapter_on": 465,
-        "normal_ok_rate_adapter_on": 0.93,
+        "train_repaired": 278,
+        "train_repair_rate": 0.35145385587863465,
+        "heldout_repaired": 70,
+        "heldout_repair_rate": 0.37433155080213903,
         "heldout_repaired_adapter_off": 0,
         "heldout_repair_rate_adapter_off": 0.0,
+        "normal_ok_adapter_forced_on": 498,
+        "normal_ok_rate_adapter_forced_on": 0.996,
+        "normal_ok_gated": 500,
+        "normal_ok_rate_gated": 1.0,
+        "heldout_repaired_gated": 70,
+        "heldout_repair_rate_gated": 0.37433155080213903,
+        "gate_stats": {
+          "examples_gate_on": 187,
+          "examples_gate_off": 500
+        },
         "n_train": 791,
-        "n_heldout": 197,
+        "n_heldout": 187,
         "n_normal": 500,
+        "paper_claim_repair_rate_mistral": 0.948,
         "paper_claim_repair_rate_avg": 0.8688
       },
       "rq5_speed": {
         "tokens_per_second": {
-          "base": 31.75744315158763,
-          "gp_hooks": 19.98954963228586,
-          "gc_adapter": 17.92915214263845
+          "base": 31.97070060835057,
+          "gp_hooks": 31.551147973342598,
+          "gc_adapter": 31.570795486162172
         },
         "relative": {
           "base": 1.0,
-          "gp_hooks": 0.6294445537340602,
-          "gc_adapter": 0.5645653542401801
+          "gp_hooks": 0.9868769646262182,
+          "gc_adapter": 0.9874915120851638
         }
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-07-20T11:55:54",
-    "git_commit": "36a3094"
+    "timestamp": "2026-07-31T14:19:15",
+    "git_commit": "b14e7d4",
+    "git_dirty": true,
+    "env": {
+      "torch": "2.6.0+cu124",
+      "cuda": "12.4",
+      "gpu": "NVIDIA RTX A6000",
+      "transformers": "5.14.1",
+      "peft": "0.19.1",
+      "sklearn": "1.9.0"
+    }
   }
 }

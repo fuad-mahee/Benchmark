@@ -24,10 +24,10 @@ Paper claims: precision 100%, avg recall 64.47%, avg F1 0.7835.
 
 | Model | Mode | Repair rate | Normal tokens broken |
 |---|---|---|---|
-| smoke-test | adaptive | 1.00% | 0.00% |
-| smoke-test | rule_based | 28.00% | 16.00% |
-| mistral-7b-instruct-v01 | adaptive | 0.51% | 0.20% |
-| mistral-7b-instruct-v01 | rule_based | 21.56% | 1.00% |
+| smoke-test | adaptive | 2.50% | 0.00% |
+| smoke-test | rule_based | 17.50% | 10.00% |
+| mistral-7b-instruct-v01 | adaptive | 1.01% | 0.00% |
+| mistral-7b-instruct-v01 | rule_based | 6.48% | 0.00% |
 
 Paper claims: adaptive 50.06% avg, rule-based 36.79% avg. Collateral breakage is not reported in the paper.
 
@@ -36,7 +36,7 @@ Paper claims: adaptive 50.06% avg, rule-based 36.79% avg. Collateral breakage is
 | Model | Train-split repair | Held-out repair | Normal ok (adapter on) | Held-out repair (adapter off) |
 |---|---|---|---|---|
 | smoke-test | 17.91% | 18.18% | 96.00% | 3.03% |
-| mistral-7b-instruct-v01 | 81.42% | 55.33% | 93.00% | 0.00% |
+| mistral-7b-instruct-v01 | 35.15% | 37.43% | - | 0.00% |
 
 Paper claims 86.88% avg but (apparently) evaluates on its own training tokens; the held-out column is the generalization test.
 
@@ -44,8 +44,8 @@ Paper claims 86.88% avg but (apparently) evaluates on its own training tokens; t
 
 | Model | Variant | tok/s | Relative to base |
 |---|---|---|---|
-| mistral-7b-instruct-v01 | base | 31.757 | 1.000 |
-| mistral-7b-instruct-v01 | gp_hooks | 19.990 | 0.629 |
-| mistral-7b-instruct-v01 | gc_adapter | 17.929 | 0.565 |
+| mistral-7b-instruct-v01 | base | 31.971 | 1.000 |
+| mistral-7b-instruct-v01 | gp_hooks | 31.551 | 0.987 |
+| mistral-7b-instruct-v01 | gc_adapter | 31.571 | 0.987 |
 
 Paper (GlitchCleaner Table 6) claims: base 66.30, GC 62.83, GP 11.82 tok/s.

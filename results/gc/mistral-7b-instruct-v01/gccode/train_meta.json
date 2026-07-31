@@ -1,6 +1,15 @@
 {
-  "timestamp": "2026-07-19T16:38:55",
-  "git_commit": "706e27d",
+  "timestamp": "2026-07-31T01:12:00",
+  "git_commit": "b14e7d4",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
   "model": "mistral-7b-instruct-v01",
   "config": {
     "seed": 0,
@@ -14,19 +23,30 @@
       ]
     },
     "holdout_fraction": 0.2,
+    "exclude_leaked_from_holdout": true,
     "training": {
-      "epochs": 3,
-      "lr": 0.0002,
+      "epochs": 15,
+      "lr": 0.0001,
       "batch_size": 8,
-      "gradient_accumulation": 2,
+      "gradient_accumulation": 64,
+      "weight_decay": 0.01,
+      "scheduler": "linear",
+      "warmup_ratio": 0.1,
+      "grad_clip": 1.0,
+      "max_length": 384,
       "mask_prompt_loss": true
     },
+    "prompt_style": "decoded",
     "eval": {
-      "max_new_tokens": 24
+      "max_new_tokens": 24,
+      "gated": true
     }
   },
   "protocol": "gccode",
+  "prompt_style": "decoded",
+  "n_glitch_total": 2552,
   "n_train": 2042,
-  "n_heldout": 510,
-  "train_seconds": 81.67975239999942
+  "n_heldout": 475,
+  "n_heldout_dropped_leaked": 35,
+  "train_seconds": 428.1566684999998
 }

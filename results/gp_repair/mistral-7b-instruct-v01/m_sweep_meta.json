@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-07-31T01:02:40",
+  "git_commit": "b14e7d4",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "mistral-7b-instruct-v01",
+  "seed": 0,
+  "m_sweep": [
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ],
+  "protocol": "paper",
+  "stream_mode": "separate",
+  "position": "token",
+  "alpha_beta": {
+    "alpha": 4.0,
+    "beta": 1.5
+  },
+  "rows": [
+    {
+      "m": 0.25,
+      "total_neun_up": 376,
+      "total_neun_down": 530,
+      "repair_rate": 0.05,
+      "repaired": 25,
+      "n_glitch": 500,
+      "normal_break_rate": 0.002
+    },
+    {
+      "m": 0.5,
+      "total_neun_up": 195,
+      "total_neun_down": 2222,
+      "repair_rate": 0.048,
+      "repaired": 24,
+      "n_glitch": 500,
+      "normal_break_rate": 0.002
+    },
+    {
+      "m": 1.0,
+      "total_neun_up": 63,
+      "total_neun_down": 17041,
+      "repair_rate": 0.068,
+      "repaired": 34,
+      "n_glitch": 500,
+      "normal_break_rate": 0.002
+    },
+    {
+      "m": 2.0,
+      "total_neun_up": 5,
+      "total_neun_down": 150755,
+      "repair_rate": 0.08,
+      "repaired": 40,
+      "n_glitch": 500,
+      "normal_break_rate": 0.002
+    },
+    {
+      "m": 4.0,
+      "total_neun_up": 1,
+      "total_neun_down": 270882,
+      "repair_rate": 0.122,
+      "repaired": 61,
+      "n_glitch": 500,
+      "normal_break_rate": 0.004
+    }
+  ]
+}

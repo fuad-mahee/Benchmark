@@ -1,0 +1,25 @@
+{
+  "digest": "ed7fb8628082fbe2",
+  "experiment": "alpha_beta_grid",
+  "stream_mode": "separate",
+  "position": "token",
+  "task": "repetition",
+  "max_new_tokens": 24,
+  "n_glitch": 500,
+  "n_normal": 500,
+  "alphas": [
+    1.0,
+    2.0,
+    4.0,
+    8.0,
+    16.0
+  ],
+  "betas": [
+    0.25,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    4.0
+  ]
+}

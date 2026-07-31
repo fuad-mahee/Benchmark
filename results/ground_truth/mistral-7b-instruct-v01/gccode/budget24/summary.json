@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-07-31T00:47:47",
+  "git_commit": "b14e7d4",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "mistral-7b-instruct-v01",
+  "hf_id": "mistralai/Mistral-7B-Instruct-v0.1",
+  "limit": null,
+  "protocol": "gccode",
+  "max_new_tokens": 24,
+  "counts": {
+    "normal": 29193,
+    "glitch": 2550,
+    "unreachable": 253,
+    "special": 3,
+    "undecodable": 1
+  },
+  "sweep_seconds": 571.9128587000014,
+  "paper_reference": {
+    "glitchprober_llama2": 6425,
+    "glitchcleaner_llama2": 4743
+  }
+}

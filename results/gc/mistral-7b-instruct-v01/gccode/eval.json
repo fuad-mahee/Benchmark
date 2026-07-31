@@ -1,6 +1,15 @@
 {
-  "timestamp": "2026-07-19T16:39:37",
-  "git_commit": "706e27d",
+  "timestamp": "2026-07-31T01:12:52",
+  "git_commit": "b14e7d4",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
   "model": "mistral-7b-instruct-v01",
   "config": {
     "seed": 0,
@@ -14,30 +23,47 @@
       ]
     },
     "holdout_fraction": 0.2,
+    "exclude_leaked_from_holdout": true,
     "training": {
-      "epochs": 3,
-      "lr": 0.0002,
+      "epochs": 15,
+      "lr": 0.0001,
       "batch_size": 8,
-      "gradient_accumulation": 2,
+      "gradient_accumulation": 64,
+      "weight_decay": 0.01,
+      "scheduler": "linear",
+      "warmup_ratio": 0.1,
+      "grad_clip": 1.0,
+      "max_length": 384,
       "mask_prompt_loss": true
     },
+    "prompt_style": "decoded",
     "eval": {
-      "max_new_tokens": 24
+      "max_new_tokens": 24,
+      "gated": true
     }
   },
   "protocol": "gccode",
   "results": {
-    "train_repaired": 1836,
-    "train_repair_rate": 0.8991185112634672,
-    "heldout_repaired": 380,
-    "heldout_repair_rate": 0.7450980392156863,
-    "normal_ok_adapter_on": 483,
-    "normal_ok_rate_adapter_on": 0.966,
+    "train_repaired": 1694,
+    "train_repair_rate": 0.8295788442703232,
+    "heldout_repaired": 371,
+    "heldout_repair_rate": 0.7810526315789473,
     "heldout_repaired_adapter_off": 0,
     "heldout_repair_rate_adapter_off": 0.0,
+    "normal_ok_adapter_forced_on": 498,
+    "normal_ok_rate_adapter_forced_on": 0.996,
+    "normal_ok_gated": 498,
+    "normal_ok_rate_gated": 0.996,
+    "heldout_repaired_gated": 371,
+    "heldout_repair_rate_gated": 0.7810526315789473,
+    "gate_stats": {
+      "examples_gate_on": 975,
+      "examples_gate_off": 0
+    },
     "n_train": 2042,
-    "n_heldout": 510,
+    "n_heldout": 475,
     "n_normal": 500,
+    "paper_claim_repair_rate_mistral": 0.948,
     "paper_claim_repair_rate_avg": 0.8688
   }
 }

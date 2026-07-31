@@ -264,8 +264,69 @@ commits 0c03490 and a3d1042.
   and together move repair rate by roughly an order of magnitude at fixed
   alpha/beta. For this method they matter more than the withheld constants.
 
-### Reruns
-All RQ3/RQ4/RQ5 numbers are being regenerated under the corrected implementation,
-plus: the 2x2 implementation-choice ablation, the m-sweep, the closing factorial
-cell (gccode prompt @ 24 tokens), and GC retrained with the authors' own
-hyperparameters. See `docs/benchmark_study.tex` for the final numbers.
+## 2026-07-31 - CORRECTED RERUNS COMPLETE (these supersede ALL numbers above)
+
+Mistral-7B-Instruct-v0.1. Every number below comes from the corrected
+implementation (separate gate/data streams, token position, real lambda gate,
+upstream GC hyperparameters, seeded, leakage-filtered, fixed accumulation).
+
+### RQ1 - factorial CLOSED by measurement
+gccode prompt @ 24 tokens: **2,550 glitch** (vs 2,552 at 10 tokens; paper prompt
+@ 24 tokens = 988). Generation budget moves the count by **2 tokens**; the prompt
+wording moves it by ~1,560. The post-hoc attribution (prompt 99.0% / oracle 0.9%
+/ length 0.06%) is now confirmed by a direct run, not extrapolation.
+
+### RQ3 - GP repair, corrected
+| config (alpha=4, beta=1.5) | repair | collateral |
+|---|---|---|
+| separate streams / token position (paper reading) | 6.48% (32/494) | 0.00% |
+| product / token | 2.23% (11/494) | 0.00% |
+| separate / all positions | 17.41% (86/494) | 1.20% |
+| product / all positions (= our v1) | 15.18% (75/494) | 1.00% |
+
+**7.8x spread across four defensible readings of the same paper.** Position
+matters more than which tensor. Paper claims 12.92% for this configuration -
+which sits INSIDE our range, so the claim is neither confirmed nor refuted; it is
+under-determined by the paper's own description.
+
+Adaptive (identity constants): 1.01% paper / 0.24% gccode - degenerate, do NOT
+cite as the method's performance.
+
+Corrected grid best cell: alpha=8, beta=1.0 -> **7.60%** (v1 grid said 24.0%; that
+grid was product/all-positions AND had silently resumed a stale checkpoint).
+
+**m-sweep (new, and the most informative RQ3 result):**
+| m | Neun_up | Neun_down | repair | collateral |
+|---|---|---|---|---|
+| 0.25 | 376 | 530 | 5.0% | 0.2% |
+| 0.5 | 195 | 2,222 | 4.8% | 0.2% |
+| 1.0 (paper) | 63 | 17,041 | 6.8% | 0.2% |
+| 2.0 | 5 | 150,755 | 8.0% | 0.2% |
+| 4.0 | 1 | 270,882 | **12.2%** | 0.4% |
+Repair RISES monotonically as the promotion set shrinks to a single neuron. This
+is direct evidence that suppression of persistently-silent neurons carries the
+entire mechanism and promotion contributes nothing measurable - a cleaner form of
+the withdrawn "beta is inert" claim, established by a different experiment.
+
+### RQ4 - GC repair, corrected: THE MEMORISATION GAP LARGELY DISAPPEARS
+| protocol | n_train | n_heldout | train | **held-out** | adapter off | clean (gated) |
+|---|---|---|---|---|---|---|
+| paper | 791 | 187 (10 leaked, dropped) | 35.15% | **37.43%** | 0.00% | 100.00% |
+| gccode | 2,042 | 475 (35 dropped) | 82.96% | **78.11%** | 0.00% | 99.60% |
+
+**Finding 8 is substantially WITHDRAWN.** The 15-26 point gap reported earlier was
+mostly an artefact of our own broken training (3 epochs, wrong LR, unseeded,
+dropped gradients). With the authors' own hyperparameters the gap is 4.85pp under
+their protocol, and under the paper protocol held-out EXCEEDS train. GlitchCleaner
+generalises to unseen glitch tokens far better than we previously reported.
+
+What remains: held-out 78.11% vs the paper's claimed 94.80% for this model. And
+the losslessness claim is now SUPPORTED - with the real gate, clean tokens are
+unaffected (100% / 99.6%).
+
+### RQ5 - speed, corrected: BOTH SLOWDOWN CLAIMS WITHDRAWN
+base 31.97 / GP hooks 31.55 / GC gated adapter 31.57 tok/s -> ~1% overhead each.
+The earlier 37-44% penalties were artefacts of our v1 configuration (repair hooks
+firing at every decode step rather than only at the token's position).
+**CAVEAT: this run has not been repeated with controlled ordering and the change
+from the v1 measurement is large. Re-verify before publishing (see HANDOVER.md).**

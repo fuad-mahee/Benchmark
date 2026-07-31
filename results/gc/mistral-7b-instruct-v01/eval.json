@@ -1,6 +1,15 @@
 {
-  "timestamp": "2026-07-19T16:37:19",
-  "git_commit": "706e27d",
+  "timestamp": "2026-07-31T00:51:17",
+  "git_commit": "b14e7d4",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
   "model": "mistral-7b-instruct-v01",
   "config": {
     "seed": 0,
@@ -14,30 +23,47 @@
       ]
     },
     "holdout_fraction": 0.2,
+    "exclude_leaked_from_holdout": true,
     "training": {
-      "epochs": 3,
-      "lr": 0.0002,
+      "epochs": 15,
+      "lr": 0.0001,
       "batch_size": 8,
-      "gradient_accumulation": 2,
+      "gradient_accumulation": 64,
+      "weight_decay": 0.01,
+      "scheduler": "linear",
+      "warmup_ratio": 0.1,
+      "grad_clip": 1.0,
+      "max_length": 384,
       "mask_prompt_loss": true
     },
+    "prompt_style": "decoded",
     "eval": {
-      "max_new_tokens": 24
+      "max_new_tokens": 24,
+      "gated": true
     }
   },
   "protocol": "paper",
   "results": {
-    "train_repaired": 644,
-    "train_repair_rate": 0.8141592920353983,
-    "heldout_repaired": 109,
-    "heldout_repair_rate": 0.5532994923857868,
-    "normal_ok_adapter_on": 465,
-    "normal_ok_rate_adapter_on": 0.93,
+    "train_repaired": 278,
+    "train_repair_rate": 0.35145385587863465,
+    "heldout_repaired": 70,
+    "heldout_repair_rate": 0.37433155080213903,
     "heldout_repaired_adapter_off": 0,
     "heldout_repair_rate_adapter_off": 0.0,
+    "normal_ok_adapter_forced_on": 498,
+    "normal_ok_rate_adapter_forced_on": 0.996,
+    "normal_ok_gated": 500,
+    "normal_ok_rate_gated": 1.0,
+    "heldout_repaired_gated": 70,
+    "heldout_repair_rate_gated": 0.37433155080213903,
+    "gate_stats": {
+      "examples_gate_on": 187,
+      "examples_gate_off": 500
+    },
     "n_train": 791,
-    "n_heldout": 197,
+    "n_heldout": 187,
     "n_normal": 500,
+    "paper_claim_repair_rate_mistral": 0.948,
     "paper_claim_repair_rate_avg": 0.8688
   }
 }
