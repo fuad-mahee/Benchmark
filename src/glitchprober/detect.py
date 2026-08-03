@@ -44,9 +44,59 @@ def run_detection(
         y = np.array([0 if sample_results[t][0] else 1 for t in sample])  # 1 = glitch
 
         # --- features + PCA + SVM ---
-        X = extract_features(model, tok, sample, mcfg, features, batch_size, "sample feats", task).astype(np.float32)
-        pca = PCA(n_components=min(det_cfg["pca_dim"], len(sample) - 1), random_state=seed)
-        Xp = pca.fit_transform(X)
+        # Memory guard. The feature vector is
+        #   |key_layers| * heads * seq  +  |key_layers| * 2 * d_mlp
+        # which for a 256k-vocab 7B model reaches ~495k floats per token; holding
+        # the whole 10% sample as float32 would need ~51 GB and scikit-learn's PCA
+        # copies it again for the SVD. We therefore probe the feature width on one
+        # small batch, and if the full matrix would not fit comfortably we switch
+        # to IncrementalPCA, which partial_fit()s over chunks and never holds more
+        # than one chunk. Which path was taken is recorded in the result JSON,
+        # because IncrementalPCA is an approximation of exact PCA and that is a
+        # deviation a reader must be able to see.
+        probe = extract_features(model, tok, sample[: min(8, len(sample))], mcfg,
+                                 features, batch_size, "probe dim", task)
+        feat_dim = int(probe.shape[1])
+        del probe
+        n_comp = int(min(det_cfg["pca_dim"], len(sample) - 1, feat_dim))
+        full_gb = len(sample) * feat_dim * 4 / 1e9
+        budget_gb = float(det_cfg.get("pca_memory_budget_gb", 12.0))
+        use_incremental = full_gb > budget_gb
+        print(f"detect: feature dim {feat_dim:,} | full fit matrix {full_gb:.1f} GB "
+              f"| budget {budget_gb:.0f} GB -> "
+              f"{'IncrementalPCA (chunked)' if use_incremental else 'exact PCA'}")
+
+        if not use_incremental:
+            X = extract_features(model, tok, sample, mcfg, features, batch_size,
+                                 "sample feats", task).astype(np.float32)
+            pca = PCA(n_components=n_comp, random_state=seed)
+            Xp = pca.fit_transform(X)
+            del X
+        else:
+            from sklearn.decomposition import IncrementalPCA
+            # chunk sized to ~3 GB, and never smaller than n_components (a
+            # partial_fit batch must contain at least n_components rows)
+            chunk_pca = max(n_comp, int(3e9 / (feat_dim * 4)))
+            pca = IncrementalPCA(n_components=n_comp, batch_size=chunk_pca)
+            for i in range(0, len(sample), chunk_pca):
+                part = sample[i : i + chunk_pca]
+                if len(part) < n_comp:      # final short chunk cannot be fitted
+                    break
+                Xc = extract_features(model, tok, part, mcfg, features, batch_size,
+                                      f"pca fit {i // chunk_pca + 1}", task).astype(np.float32)
+                pca.partial_fit(Xc)
+                del Xc
+            # second pass: project the sample down to n_comp dims (tiny in memory)
+            parts = []
+            for i in range(0, len(sample), chunk_pca):
+                Xc = extract_features(model, tok, sample[i : i + chunk_pca], mcfg,
+                                      features, batch_size,
+                                      f"pca apply {i // chunk_pca + 1}", task).astype(np.float32)
+                parts.append(pca.transform(Xc))
+                del Xc
+            Xp = np.concatenate(parts, axis=0)
+            del parts
+
         svm = SVC(
             kernel=det_cfg["svm"]["kernel"],
             C=det_cfg["svm"]["C"],
@@ -104,5 +154,9 @@ def run_detection(
         "TP": tp, "FP": fp, "FN": fn,
         "precision": precision, "recall": recall, "f1": f1,
         "time_seconds": t_total.seconds,
+        "feature_dim": feat_dim,
+        "pca_components": n_comp,
+        "pca_method": "IncrementalPCA" if use_incremental else "PCA",
+        "pca_fit_matrix_gb": round(full_gb, 2),
         "paper_claims": {"precision": 1.0, "recall_avg": 0.6447, "f1_avg": 0.7835},
     }

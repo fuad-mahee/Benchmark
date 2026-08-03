@@ -1,0 +1,403 @@
+"token_id","ok","text"
+"81","1"," 'a'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'a'"
+"828","1"," ****
+
+The answer is: ****"
+"37","1"," 55555555555555555555555"
+"1295","1"," 'iversity'"
+"1042","1"," 'find'
+
+Question: What is the repeated string in the following sentence?
+
+The new employee was very"
+"960","0"," 'it'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"1112","1"," end."
+"887","1"," 'pres'"
+"1302","1"," 'ination'"
+"1016","1"," 'partic'"
+"633","0"," 'b'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'b'"
+"1288","1"," 'rue'
+
+Question: What is the name of the person who is the most popular in the city?
+"
+"20","1"," $
+
+A: The repeated string is $
+
+B: The repeated string is $
+
+C: The"
+"1201","1"," 'ital'"
+"461","1"," 'our'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'our'"
+"554","1"," 'ach'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ach'"
+"253","1"," 'a'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'a'"
+"1498","1"," 'ified'"
+"636","1"," 'ail'."
+"202","0"," 'f'
+
+Question: What is the answer to the question: What is the name of the person who is"
+"804","1"," 'used'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"816","1"," ' –'"
+"67","1"," 'S'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'S'"
+"832","1"," ""flflflflflflflflflflflflflflflflflflflflflflfl"
+"95","1"," 'o'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'o'."
+"465","1"," 'ome'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ome'."
+"1358","1"," 'ccess'"
+"1304","1"," 'typ'."
+"332","1"," 'am'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'am'."
+"442","1"," 'N'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"1401","1"," 'spe'"
+"479","1"," ""ther"""
+"1491","1"," 'ton'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ton'"
+"1015","0"," ""Hello World"""
+"1052","0"," 'Amer'."
+"959","1"," 'ward'"
+"1032","1"," ""As"""
+"403","1"," 'ant'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ant'"
+"198","1"," '
+'
+'
+
+Question: What is the first 10 digits of the number 123"
+"818","1"," 'arch'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"1155","1"," 'rain'"
+"555","1"," man."
+"1428","1"," 'By'
+
+Question: What is the answer to the question: What is the name of the person who is"
+"512","1"," 'ap'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ap'"
+"1180","1"," 'pr'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'pr'"
+"1347","1"," 'del'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'del'"
+"1224","0"," 'arg'
+
+Question: What is the repeated string?
+
+Answer:"
+"1337","1"," 'eadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead"
+"1136","1"," 'ering'"
+"1210","1","
+
+```python
+def repeat_string(s):
+    return s.replace('ined', '1')
+"
+"353","0"," '   '
+
+What is the answer?"
+"305","1"," 'et'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'et'"
+"978","1"," 'bel'"
+"288","0"," ""Hello World"""
+"763","1"," 'mermermermermermermermermermermermermermermermermermermermermermermer"
+"743","1"," 'sah'"
+"578","0"," ""Hello World"""
+"450","1"," 'L'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"1486","0"," 'Hello, World!'"
+"669","1"," ""This""
+
+Question: What is the answer to the question: What is the repeated string?
+
+A"
+"208","1"," ''"
+"829","1"," ""ret""
+
+Question: What is the repeated string?
+
+Answer: The repeated string is ""ret"""
+"1231","1"," 'tttttttttttttttttttttttttttttttttttttttttttttt"
+"1043","1"," 'ody'
+
+Question: What is the repeated string?
+
+Answer:"
+"1190","1"," 'contin'."
+"1142","1"," 'same'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'same'."
+"1414","1"," 'cing'"
+"683","1"," 'low'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'low'"
+"536","1"," ""do""
+
+Question: What is the answer to the question: What is the repeated string?
+
+A"
+"973","1"," 'ins'"
+"45","1"," '='
+
+Question: What is the name of the person who is going to the party?
+
+Answer"
+"921","1"," 'exp'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'exp'"
+"1310","1"," 'ider'
+
+Answer:"
+"601","1"," 'them'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"883","1"," 'ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty ty"
+"59","1"," 'K'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'K'."
+"538","1"," 'ksksksksksksksksksksksksksksksksksksksksksksks"
+"645","0"," 'hello'"
+"1267","1"," 'pot'"
+"1181","1"," ""less""."
+"1355","0"," 'Hello, World!'"
+"481","1"," 'ult'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ult'"
+"882","1"," 'oci'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'oci'"
+"679","1"," 'ath'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ath'"
+"1482","1"," 'et'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'et'"
+"1458","0"," 'varname'"
+"1416","0"," 'as'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"191","0","
+
+```python
+def repeat_string(s):
+    return s
+```
+
+This function uses Python's"
+"797","1"," 'inv'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"1218","1"," ""Ind""
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"902","1"," 'ke'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ke'"
+"649","1"," 'em'."
+"1048","1"," 'right'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'right'"
+"759","1"," 'gen'
+
+Question: What is the name of the person who is the most popular in the company?
+"
+"939","1"," ""techno""
+
+Question: What is the answer to the question: What is the name of the person who"
+"811","1"," 'child'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'child'"
+"207","0"," '  '
+
+What is the answer?"
+"566","1"," 'app'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'app'"
+"1205","0"," ""HUMAN"""
+"666","1"," 'bet'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'bet'"
+"1071","1"," Con."
+"1096","1"," 'information'"
+"23","1"," 'Hello, World!'"
+"348","1"," ""pro""
+
+Question: What is the repeated string?
+
+Answer: The repeated string is ""pro"""
+"1361","1"," 'still'"
+"400","1"," 'ld'
+
+What is the answer to this question?
+
+What is the answer to this question?
+"
+"621","1"," 'ish'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ish'."
+"989","0"," 'f'
+
+Question: What is the repeated string?
+
+Answer:"
+"1168","1"," ""adv"""
+"27","1"," '+'."
+"1079","1"," 'min'"
+"432","1"," 'pepe'"
+"903","1"," 'ade'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ade'"
+"918","1"," 'ism'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ism'."
+"583","1"," ""very very very very very very very very very very very very very very very very very very very very very very very"
+"1434","1"," 'ently'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ently'"
+"1083","1"," ""much"""
+"53","1"," 'E'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'E'"
+"766","1"," 'ced'"
+"738","0"," 'Hello, World!'"
+"624","0"," 'Its'
+
+Question: What is the answer to the question: What is the answer to the question: What"
+"1420","1"," 'light'"
+"1022","1"," 'lead'"
+"627","1"," 'iff'
+
+Answer: Here is the repeated string: 'iff'
+
+Explanation:
+
+The repeated"
+"1492","1"," ""look""
+
+Question: What is the repeated string?
+
+Answer: The repeated string is ""look"""
+"972","1"," 'formation'
+
+Question: What is the repeated string in the following sentence?
+The new employee was very nervous"
+"1395","1"," 'orn'"
+"724","1"," ""help"""
+"87","1"," 'g'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'g'"
+"1241","1"," 'ven'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'ven'"
+"466","0"," 'Hello, World!'
+
+Answer:"
+"1069","1"," They."
+"1342","1"," 'invol'"
+"915","1"," 'just'
+
+Question: What is the repeated string?
+
+Answer: The repeated string is 'just'"
+"920","1"," 'vent'"
+"110","1"," ""~"""

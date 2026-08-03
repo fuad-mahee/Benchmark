@@ -10,6 +10,10 @@ detection:
     degree: 3
   features: [attn_pattern, mlp_gate, mlp_data]   # paper's chosen combination
   post_validation: true   # re-check every SVM positive with the repetition task
+  # Above this estimated fit-matrix size (GB) detection switches from exact PCA to
+  # IncrementalPCA so that large-vocabulary models do not exhaust host RAM.
+  # Recorded per run as pca_method in the result JSON.
+  pca_memory_budget_gb: 12
   # Sequence position the features are read from. The paper never states it.
   # "token" = the position of the token under test (our default, matches
   # "activation states of glitch tokens"); "last" = final prompt position.

@@ -39,12 +39,9 @@ models:
     key_layers: [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]   # assumed (papers silent)
     note: largest disagreement between papers (GC 94.80% vs GP 37.65% repair)
 
-  gemma-2b-it:
-    hf_id: google/gemma-2b-it
-    enabled: false        # gated: accept license on HF first
-    n_layers: 18
-    key_layers: [11, 12, 13, 14, 15, 16]                    # same relative depth as 19-28/32
-    note: smallest paper model; 256k vocab makes the RQ1 sweep the long pole
+  # NOTE: the gemma-2b-it entry lives in the extension block below, with the
+  # key_layers read from GlitchCleaner's own released checkpoint (6-15). An
+  # earlier duplicate here guessed 11-16 and has been removed.
 
   yi-6b-chat:
     hf_id: 01-ai/Yi-6B-Chat
@@ -60,9 +57,71 @@ models:
     n_layers: 32
     key_layers: [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]   # assumed (papers silent)
     layers_path: transformer.h
-    module_map:           # TODO verify against Qwen remote code on first run (custom arch)
-      gate: mlp.w2
+    module_map:           # UNVERIFIED - legacy custom arch. Run scripts/preflight.py
+      gate: mlp.w2        # before enabling; unresolved names are SILENTLY SKIPPED.
       up: mlp.w1
-      act: mlp.act_fn     # may not exist as a module; features.py falls back to down-input only
+      act: mlp.act_fn
       down: mlp.c_proj
-    note: legacy custom architecture; verify module_map before trusting results
+    note: legacy custom architecture; superseded by the qwen25-* entries below
+
+# ---------------------------------------------------------------------------
+# Extension set (2026-07-31). Two families x two scales, chosen so that one arm
+# is ANCHORED to published artefacts and the other tests generalisation to
+# models neither paper touched.
+#
+#   Gemma arm  - gemma-2b-it is one of the five models BOTH papers evaluated and
+#                GlitchCleaner published both its glitch-token list (29,831) and
+#                its trained adapter, so our harness can be anchored against
+#                published data exactly as it was for Mistral. gemma-7b-it is the
+#                same generation and tokenizer at 3.5x scale, isolating scale.
+#   Qwen arm   - Qwen2.5-7B/14B-Instruct. Neither paper used these; no anchor is
+#                possible, so they test whether the findings hold on models that
+#                post-date both papers. Same tokenizer across the pair, so scale
+#                is again the only variable.
+#
+# ALL FOUR verified with scripts/preflight.py before enabling: architecture,
+# layer count, layers_path, every module_map entry, tokenizer length, and the
+# single-token filter anchor. All four use the standard Llama-style MLP naming,
+# so `defaults.module_map` applies unchanged.
+#
+# key_layers rule: every GlitchCleaner released checkpoint uses a 10-layer band;
+# for 32-layer models that band is 19-28, i.e. ending at 87.5% depth. We keep the
+# width (10) and the end depth (~87.5%) and scale the start accordingly. The one
+# exception is gemma-2b-it, where we use GlitchCleaner's OWN published band
+# (6-15, read from LoRA-Parameter/gemma-2b-it.pt) so the anchor is exact.
+# ---------------------------------------------------------------------------
+
+  qwen25-7b-instruct:
+    hf_id: Qwen/Qwen2.5-7B-Instruct
+    enabled: true
+    n_layers: 28
+    key_layers: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]   # ours: 10 layers ending at 87.5% depth
+    batch_size: 96
+    note: not used by either paper - generalisation arm, no anchor available
+
+  qwen25-14b-instruct:
+    hf_id: Qwen/Qwen2.5-14B-Instruct
+    enabled: true
+    n_layers: 48
+    key_layers: [33, 34, 35, 36, 37, 38, 39, 40, 41, 42]   # ours: same rule
+    batch_size: 48
+    note: scale partner for qwen25-7b-instruct; same tokenizer, 152k vocab
+
+  gemma-2b-it:
+    hf_id: google/gemma-2b-it
+    enabled: true
+    n_layers: 18
+    key_layers: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]       # GlitchCleaner's OWN published band
+    batch_size: 96
+    note: >
+      paper model - GC published 29,831 glitch tokens and a trained adapter for it,
+      so both the census anchor and the upstream-adapter anchor are available.
+      256k vocabulary makes the census ~8x Mistral's.
+
+  gemma-7b-it:
+    hf_id: google/gemma-7b-it
+    enabled: true
+    n_layers: 28
+    key_layers: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]   # ours: 10 layers ending at 87.5% depth
+    batch_size: 48
+    note: scale partner for gemma-2b-it; same tokenizer and 256k vocab, 3.5x params

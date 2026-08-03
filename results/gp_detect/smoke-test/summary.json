@@ -1,6 +1,15 @@
 {
-  "timestamp": "2026-07-17T21:53:55",
-  "git_commit": "3bb6067",
+  "timestamp": "2026-08-04T02:13:37",
+  "git_commit": "096962c",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
   "model": "smoke-test",
   "config": {
     "gamma": 0.1,
@@ -15,13 +24,15 @@
       "mlp_gate",
       "mlp_data"
     ],
-    "post_validation": true
+    "post_validation": true,
+    "pca_memory_budget_gb": 12,
+    "position": "token"
   },
   "mean": {
     "precision": 1.0,
     "recall": 0.1317365269461078,
     "f1": 0.23280423280423285,
-    "time_seconds": 3.733224199997494
+    "time_seconds": 6.852499499998885
   },
   "std": {
     "recall": NaN,
