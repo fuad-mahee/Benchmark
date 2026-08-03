@@ -7,3 +7,4 @@ results/**/adapter/
 *.pt
 *.bin
 *.safetensors
+logs/
