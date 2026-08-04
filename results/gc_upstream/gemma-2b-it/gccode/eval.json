@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-08-04T09:36:44",
+  "git_commit": "c949ae5",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "gemma-2b-it",
+  "protocol": "gccode",
+  "results": {
+    "published_n": 29831,
+    "published_repaired": 20657,
+    "published_repair_rate": 0.6924675672957662,
+    "ours_n": 29835,
+    "ours_repaired": 20661,
+    "ours_repair_rate": 0.6925087983911513,
+    "unseen_by_upstream_n": 50,
+    "unseen_by_upstream_repaired": 49,
+    "unseen_by_upstream_repair_rate": 0.98,
+    "normal_ok_gated": 498,
+    "normal_ok_rate_gated": 0.996,
+    "gate_stats": {
+      "examples_gate_on": 60216,
+      "examples_gate_off": 0
+    },
+    "normal_ok_adapter_forced_on": 498,
+    "normal_ok_rate_adapter_forced_on": 0.996,
+    "n_normal": 500,
+    "control_zeroed_repaired": 46,
+    "control_zeroed_repair_rate": 0.0015420200462606013,
+    "paper_claim_repair_rate_mistral": 0.948,
+    "paper_claim_repaired_tokens": 2407,
+    "upstream_meta": {
+      "checkpoint": "E:\\user3\\FYS_SWK\\Benchmark\\third_party\\GlitchCleaner\\LoRA-Parameter\\gemma-2b-it.pt",
+      "declared_config": {
+        "lora_r": 4,
+        "lora_alpha": 4.0,
+        "target_layers": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      },
+      "n_modules_attached": 20,
+      "layers_attached": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "n_tensors_in_checkpoint": 40
+    }
+  }
+}

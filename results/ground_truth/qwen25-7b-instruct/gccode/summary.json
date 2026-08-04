@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-08-04T03:11:43",
+  "git_commit": "c949ae5",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "qwen25-7b-instruct",
+  "hf_id": "Qwen/Qwen2.5-7B-Instruct",
+  "limit": null,
+  "protocol": "gccode",
+  "max_new_tokens": 10,
+  "attn_impl": "default(sdpa)",
+  "counts": {
+    "normal": 114938,
+    "unreachable": 21983,
+    "glitch": 14715,
+    "special": 22,
+    "undecodable": 7
+  },
+  "sweep_seconds": 1074.9347104000008,
+  "paper_reference": {
+    "glitchprober_llama2": 6425,
+    "glitchcleaner_llama2": 4743
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-08-04T06:25:22",
+  "git_commit": "c949ae5",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "gemma-2b-it",
+  "hf_id": "google/gemma-2b-it",
+  "limit": null,
+  "protocol": "paper",
+  "max_new_tokens": 24,
+  "attn_impl": "default(sdpa)",
+  "counts": {
+    "normal": 230534,
+    "glitch": 24959,
+    "unreachable": 344,
+    "special": 156,
+    "undecodable": 7
+  },
+  "sweep_seconds": 1862.7380642999997,
+  "paper_reference": {
+    "glitchprober_llama2": 6425,
+    "glitchcleaner_llama2": 4743
+  }
+}

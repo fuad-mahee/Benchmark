@@ -1,0 +1,154 @@
+{
+  "timestamp": "2026-08-04T12:45:17",
+  "git_commit": "c949ae5",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "qwen25-14b-instruct",
+  "seed": 0,
+  "sweep": {
+    "alphas": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0
+    ],
+    "betas": [
+      0.25,
+      0.5,
+      1.0,
+      1.5,
+      2.0,
+      4.0
+    ],
+    "n_glitch_sample": 500,
+    "n_normal_sample": 500,
+    "m_sweep": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ]
+  },
+  "protocol": "paper",
+  "stream_mode": "separate",
+  "position": "token",
+  "neuron_selection": {
+    "L33.gate": {
+      "n_neun_up": 6,
+      "n_neun_down": 2138,
+      "d_mlp": 13824
+    },
+    "L33.data": {
+      "n_neun_up": 22,
+      "n_neun_down": 196,
+      "d_mlp": 13824
+    },
+    "L34.gate": {
+      "n_neun_up": 5,
+      "n_neun_down": 1083,
+      "d_mlp": 13824
+    },
+    "L34.data": {
+      "n_neun_up": 13,
+      "n_neun_down": 114,
+      "d_mlp": 13824
+    },
+    "L35.gate": {
+      "n_neun_up": 6,
+      "n_neun_down": 571,
+      "d_mlp": 13824
+    },
+    "L35.data": {
+      "n_neun_up": 24,
+      "n_neun_down": 101,
+      "d_mlp": 13824
+    },
+    "L36.gate": {
+      "n_neun_up": 7,
+      "n_neun_down": 198,
+      "d_mlp": 13824
+    },
+    "L36.data": {
+      "n_neun_up": 17,
+      "n_neun_down": 62,
+      "d_mlp": 13824
+    },
+    "L37.gate": {
+      "n_neun_up": 5,
+      "n_neun_down": 64,
+      "d_mlp": 13824
+    },
+    "L37.data": {
+      "n_neun_up": 12,
+      "n_neun_down": 44,
+      "d_mlp": 13824
+    },
+    "L38.gate": {
+      "n_neun_up": 2,
+      "n_neun_down": 36,
+      "d_mlp": 13824
+    },
+    "L38.data": {
+      "n_neun_up": 8,
+      "n_neun_down": 41,
+      "d_mlp": 13824
+    },
+    "L39.gate": {
+      "n_neun_up": 3,
+      "n_neun_down": 17,
+      "d_mlp": 13824
+    },
+    "L39.data": {
+      "n_neun_up": 4,
+      "n_neun_down": 34,
+      "d_mlp": 13824
+    },
+    "L40.gate": {
+      "n_neun_up": 2,
+      "n_neun_down": 18,
+      "d_mlp": 13824
+    },
+    "L40.data": {
+      "n_neun_up": 10,
+      "n_neun_down": 22,
+      "d_mlp": 13824
+    },
+    "L41.gate": {
+      "n_neun_up": 2,
+      "n_neun_down": 15,
+      "d_mlp": 13824
+    },
+    "L41.data": {
+      "n_neun_up": 9,
+      "n_neun_down": 14,
+      "d_mlp": 13824
+    },
+    "L42.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 14,
+      "d_mlp": 13824
+    },
+    "L42.data": {
+      "n_neun_up": 4,
+      "n_neun_down": 9,
+      "d_mlp": 13824
+    }
+  },
+  "n_glitch": 500,
+  "n_normal": 500,
+  "best_cell": {
+    "alpha": 16.0,
+    "beta": 4.0,
+    "repair_rate": 0.132,
+    "normal_break_rate": 0.022
+  }
+}

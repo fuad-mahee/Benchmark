@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-08-04T10:23:01",
+  "git_commit": "c949ae5",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "qwen25-7b-instruct",
+  "seed": 0,
+  "m_sweep": [
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ],
+  "protocol": "paper",
+  "stream_mode": "separate",
+  "position": "token",
+  "alpha_beta": {
+    "alpha": 4.0,
+    "beta": 1.5
+  },
+  "rows": [
+    {
+      "m": 0.25,
+      "total_neun_up": 1602,
+      "total_neun_down": 8763,
+      "repair_rate": 0.092,
+      "repaired": 46,
+      "n_glitch": 500,
+      "normal_break_rate": 0.032
+    },
+    {
+      "m": 0.5,
+      "total_neun_up": 815,
+      "total_neun_down": 25756,
+      "repair_rate": 0.094,
+      "repaired": 47,
+      "n_glitch": 500,
+      "normal_break_rate": 0.024
+    },
+    {
+      "m": 1.0,
+      "total_neun_up": 273,
+      "total_neun_down": 81844,
+      "repair_rate": 0.086,
+      "repaired": 43,
+      "n_glitch": 500,
+      "normal_break_rate": 0.024
+    },
+    {
+      "m": 2.0,
+      "total_neun_up": 59,
+      "total_neun_down": 216340,
+      "repair_rate": 0.182,
+      "repaired": 91,
+      "n_glitch": 500,
+      "normal_break_rate": 0.02
+    },
+    {
+      "m": 4.0,
+      "total_neun_up": 9,
+      "total_neun_down": 327347,
+      "repair_rate": 0.192,
+      "repaired": 96,
+      "n_glitch": 500,
+      "normal_break_rate": 0.038
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "timestamp": "2026-08-04T10:34:51",
+  "git_commit": "c949ae5",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "qwen25-7b-instruct",
+  "seed": 0,
+  "sweep": {
+    "alphas": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0
+    ],
+    "betas": [
+      0.25,
+      0.5,
+      1.0,
+      1.5,
+      2.0,
+      4.0
+    ],
+    "n_glitch_sample": 500,
+    "n_normal_sample": 500,
+    "m_sweep": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ]
+  },
+  "protocol": "paper",
+  "stream_mode": "separate",
+  "position": "token",
+  "neuron_selection": {
+    "L15.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 13143,
+      "d_mlp": 18944
+    },
+    "L15.data": {
+      "n_neun_up": 5,
+      "n_neun_down": 3298,
+      "d_mlp": 18944
+    },
+    "L16.gate": {
+      "n_neun_up": 0,
+      "n_neun_down": 13561,
+      "d_mlp": 18944
+    },
+    "L16.data": {
+      "n_neun_up": 1,
+      "n_neun_down": 3524,
+      "d_mlp": 18944
+    },
+    "L17.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 12186,
+      "d_mlp": 18944
+    },
+    "L17.data": {
+      "n_neun_up": 3,
+      "n_neun_down": 2853,
+      "d_mlp": 18944
+    },
+    "L18.gate": {
+      "n_neun_up": 5,
+      "n_neun_down": 11278,
+      "d_mlp": 18944
+    },
+    "L18.data": {
+      "n_neun_up": 5,
+      "n_neun_down": 2508,
+      "d_mlp": 18944
+    },
+    "L19.gate": {
+      "n_neun_up": 6,
+      "n_neun_down": 9087,
+      "d_mlp": 18944
+    },
+    "L19.data": {
+      "n_neun_up": 8,
+      "n_neun_down": 1371,
+      "d_mlp": 18944
+    },
+    "L20.gate": {
+      "n_neun_up": 10,
+      "n_neun_down": 5125,
+      "d_mlp": 18944
+    },
+    "L20.data": {
+      "n_neun_up": 8,
+      "n_neun_down": 590,
+      "d_mlp": 18944
+    },
+    "L21.gate": {
+      "n_neun_up": 13,
+      "n_neun_down": 1889,
+      "d_mlp": 18944
+    },
+    "L21.data": {
+      "n_neun_up": 23,
+      "n_neun_down": 263,
+      "d_mlp": 18944
+    },
+    "L22.gate": {
+      "n_neun_up": 26,
+      "n_neun_down": 651,
+      "d_mlp": 18944
+    },
+    "L22.data": {
+      "n_neun_up": 38,
+      "n_neun_down": 155,
+      "d_mlp": 18944
+    },
+    "L23.gate": {
+      "n_neun_up": 9,
+      "n_neun_down": 161,
+      "d_mlp": 18944
+    },
+    "L23.data": {
+      "n_neun_up": 71,
+      "n_neun_down": 92,
+      "d_mlp": 18944
+    },
+    "L24.gate": {
+      "n_neun_up": 3,
+      "n_neun_down": 48,
+      "d_mlp": 18944
+    },
+    "L24.data": {
+      "n_neun_up": 37,
+      "n_neun_down": 61,
+      "d_mlp": 18944
+    }
+  },
+  "n_glitch": 500,
+  "n_normal": 500,
+  "best_cell": {
+    "alpha": 16.0,
+    "beta": 4.0,
+    "repair_rate": 0.104,
+    "normal_break_rate": 0.032
+  }
+}

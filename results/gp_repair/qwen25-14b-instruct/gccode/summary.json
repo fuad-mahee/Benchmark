@@ -1,0 +1,291 @@
+{
+  "timestamp": "2026-08-04T11:19:01",
+  "git_commit": "c949ae5",
+  "git_dirty": true,
+  "env": {
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA RTX A6000",
+    "transformers": "5.14.1",
+    "peft": "0.19.1",
+    "sklearn": "1.9.0"
+  },
+  "model": "qwen25-14b-instruct",
+  "seed": 0,
+  "config": {
+    "m": 1.0,
+    "neun_up_quantile": 0.99,
+    "gamma": 0.1,
+    "stream_mode": "separate",
+    "position": "token",
+    "adaptive_fit_fraction": 0.5,
+    "adaptive": {
+      "k1": 1.0,
+      "b1": 0.0,
+      "k2": 1.0,
+      "b2": 0.0,
+      "alpha_min": 1.0
+    },
+    "rule_based": {
+      "alpha": 4.0,
+      "beta": 1.5
+    }
+  },
+  "protocol": "gccode",
+  "stream_mode": "separate",
+  "position": "token",
+  "sample_cap": null,
+  "n_glitch_total": 8185,
+  "n_fit": 4092,
+  "n_eval": 4093,
+  "neuron_selection": {
+    "L33.gate": {
+      "n_neun_up": 8,
+      "n_neun_down": 2132,
+      "d_mlp": 13824
+    },
+    "L33.data": {
+      "n_neun_up": 20,
+      "n_neun_down": 188,
+      "d_mlp": 13824
+    },
+    "L34.gate": {
+      "n_neun_up": 6,
+      "n_neun_down": 1053,
+      "d_mlp": 13824
+    },
+    "L34.data": {
+      "n_neun_up": 17,
+      "n_neun_down": 114,
+      "d_mlp": 13824
+    },
+    "L35.gate": {
+      "n_neun_up": 7,
+      "n_neun_down": 561,
+      "d_mlp": 13824
+    },
+    "L35.data": {
+      "n_neun_up": 24,
+      "n_neun_down": 104,
+      "d_mlp": 13824
+    },
+    "L36.gate": {
+      "n_neun_up": 8,
+      "n_neun_down": 197,
+      "d_mlp": 13824
+    },
+    "L36.data": {
+      "n_neun_up": 17,
+      "n_neun_down": 66,
+      "d_mlp": 13824
+    },
+    "L37.gate": {
+      "n_neun_up": 6,
+      "n_neun_down": 70,
+      "d_mlp": 13824
+    },
+    "L37.data": {
+      "n_neun_up": 13,
+      "n_neun_down": 44,
+      "d_mlp": 13824
+    },
+    "L38.gate": {
+      "n_neun_up": 2,
+      "n_neun_down": 29,
+      "d_mlp": 13824
+    },
+    "L38.data": {
+      "n_neun_up": 8,
+      "n_neun_down": 51,
+      "d_mlp": 13824
+    },
+    "L39.gate": {
+      "n_neun_up": 3,
+      "n_neun_down": 31,
+      "d_mlp": 13824
+    },
+    "L39.data": {
+      "n_neun_up": 6,
+      "n_neun_down": 33,
+      "d_mlp": 13824
+    },
+    "L40.gate": {
+      "n_neun_up": 3,
+      "n_neun_down": 18,
+      "d_mlp": 13824
+    },
+    "L40.data": {
+      "n_neun_up": 11,
+      "n_neun_down": 29,
+      "d_mlp": 13824
+    },
+    "L41.gate": {
+      "n_neun_up": 2,
+      "n_neun_down": 20,
+      "d_mlp": 13824
+    },
+    "L41.data": {
+      "n_neun_up": 11,
+      "n_neun_down": 17,
+      "d_mlp": 13824
+    },
+    "L42.gate": {
+      "n_neun_up": 1,
+      "n_neun_down": 18,
+      "d_mlp": 13824
+    },
+    "L42.data": {
+      "n_neun_up": 6,
+      "n_neun_down": 14,
+      "d_mlp": 13824
+    }
+  },
+  "adaptive_factors": {
+    "L33.gate": {
+      "beta": -0.044661,
+      "alpha": 1.036478,
+      "d_act_up": -0.044661,
+      "d_act_down": 1.036478
+    },
+    "L33.data": {
+      "beta": 0.298888,
+      "alpha": 1.0,
+      "d_act_up": 0.298888,
+      "d_act_down": 0.993012
+    },
+    "L34.gate": {
+      "beta": 0.186453,
+      "alpha": 1.0,
+      "d_act_up": 0.186453,
+      "d_act_down": 0.995276
+    },
+    "L34.data": {
+      "beta": 0.301782,
+      "alpha": 1.0,
+      "d_act_up": 0.301782,
+      "d_act_down": 0.93179
+    },
+    "L35.gate": {
+      "beta": -0.002933,
+      "alpha": 1.0,
+      "d_act_up": -0.002933,
+      "d_act_down": 0.943814
+    },
+    "L35.data": {
+      "beta": 0.246058,
+      "alpha": 1.0,
+      "d_act_up": 0.246058,
+      "d_act_down": 0.940129
+    },
+    "L36.gate": {
+      "beta": 0.020884,
+      "alpha": 1.0,
+      "d_act_up": 0.020884,
+      "d_act_down": 0.955406
+    },
+    "L36.data": {
+      "beta": 0.128564,
+      "alpha": 1.0,
+      "d_act_up": 0.128564,
+      "d_act_down": 0.976295
+    },
+    "L37.gate": {
+      "beta": 0.139751,
+      "alpha": 1.0,
+      "d_act_up": 0.139751,
+      "d_act_down": 0.959082
+    },
+    "L37.data": {
+      "beta": 0.007292,
+      "alpha": 1.0,
+      "d_act_up": 0.007292,
+      "d_act_down": 0.964391
+    },
+    "L38.gate": {
+      "beta": -0.004845,
+      "alpha": 1.0,
+      "d_act_up": -0.004845,
+      "d_act_down": 0.987229
+    },
+    "L38.data": {
+      "beta": -0.278105,
+      "alpha": 1.0,
+      "d_act_up": -0.278105,
+      "d_act_down": 0.994778
+    },
+    "L39.gate": {
+      "beta": -0.117557,
+      "alpha": 1.0,
+      "d_act_up": -0.117557,
+      "d_act_down": 0.972625
+    },
+    "L39.data": {
+      "beta": 0.046538,
+      "alpha": 1.003481,
+      "d_act_up": 0.046538,
+      "d_act_down": 1.003481
+    },
+    "L40.gate": {
+      "beta": 0.079819,
+      "alpha": 1.0,
+      "d_act_up": 0.079819,
+      "d_act_down": 0.968128
+    },
+    "L40.data": {
+      "beta": -0.21604,
+      "alpha": 1.043658,
+      "d_act_up": -0.21604,
+      "d_act_down": 1.043658
+    },
+    "L41.gate": {
+      "beta": 0.051704,
+      "alpha": 1.0,
+      "d_act_up": 0.051704,
+      "d_act_down": 0.946087
+    },
+    "L41.data": {
+      "beta": -0.155865,
+      "alpha": 1.089137,
+      "d_act_up": -0.155865,
+      "d_act_down": 1.089137
+    },
+    "L42.gate": {
+      "beta": 0.202174,
+      "alpha": 1.0,
+      "d_act_up": 0.202174,
+      "d_act_down": 0.96812
+    },
+    "L42.data": {
+      "beta": 0.178204,
+      "alpha": 1.065586,
+      "d_act_up": 0.178204,
+      "d_act_down": 1.065586
+    }
+  },
+  "results": {
+    "adaptive": {
+      "n_glitch": 4093,
+      "repaired": 29,
+      "repair_rate": 0.0070852675299291476,
+      "n_normal_checked": 500,
+      "normal_broken": 0,
+      "normal_break_rate": 0.0
+    },
+    "rule_based": {
+      "n_glitch": 4093,
+      "repaired": 250,
+      "repair_rate": 0.0610798924993892,
+      "n_normal_checked": 500,
+      "normal_broken": 3,
+      "normal_break_rate": 0.006
+    }
+  },
+  "paper_claims_mistral": {
+    "adaptive": 0.376,
+    "rule_based": 0.1292
+  },
+  "paper_claims_avg": {
+    "adaptive": 0.5006,
+    "rule_based": 0.3679
+  }
+}

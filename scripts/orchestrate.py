@@ -103,9 +103,30 @@ def run_step(model: str, step_id: str, script: str, extra: list[str],
     log_path = LOGS / model / f"{step_id}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # A step is only "done" if the journal says it completed. Existence of the
+    # output file is NOT sufficient: several steps write their output
+    # incrementally (the m-sweep appends a row per threshold, the alpha/beta grid
+    # a row per cell), so a step killed midway leaves a PARTIAL file that an
+    # existence check would happily skip. Cross-checking the journal prevents a
+    # truncated artefact from being mistaken for a finished one.
     if out_path.exists() and not force:
-        print(f"  SKIP  {step_id:<22} (exists: {out_path.relative_to(ROOT)})")
-        return {"model": model, "step": step_id, "status": "skipped"}
+        completed = False
+        jl = LOGS / "progress.jsonl"
+        if jl.exists():
+            for line in jl.read_text(encoding="utf-8").splitlines():
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue
+                if (e.get("model") == model and e.get("step") == step_id
+                        and e.get("status") == "ok"):
+                    completed = True
+                    break
+        if completed:
+            print(f"  SKIP  {step_id:<22} (completed: {out_path.relative_to(ROOT)})")
+            return {"model": model, "step": step_id, "status": "skipped"}
+        print(f"  REDO  {step_id:<22} (output exists but no 'ok' in journal -> "
+              f"treating as PARTIAL)")
 
     cmd = [PY, str(ROOT / "scripts" / script), "--model", model] + extra
     print(f"  RUN   {step_id:<22} {' '.join(cmd[2:])}")
